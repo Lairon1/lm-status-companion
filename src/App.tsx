@@ -320,9 +320,12 @@ export default function App() {
             </div>
           )}
         </Card>
+          </div>
 
-        {/* Credentials */}
-        <Card className="p-6 space-y-4">
+          {/* Right column */}
+          <div className="space-y-6">
+            {/* Credentials */}
+            <Card className="p-6 space-y-4">
           <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
