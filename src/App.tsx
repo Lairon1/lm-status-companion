@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 type Settings = {
   address: string;
   port: string;
+  apiVersion: string;
   login: string;
   password: string;
   token: string;
@@ -25,6 +26,7 @@ type Settings = {
 const DEFAULTS: Settings = {
   address: "127.0.0.1",
   port: "5995",
+  apiVersion: "v2",
   login: "admin",
   password: "admin",
   token: "",
@@ -33,6 +35,7 @@ const DEFAULTS: Settings = {
   notificationVolume: 0.4,
   autoRefresh: false,
 };
+
 
 const SETTINGS_KEY = "lm4z_settings";
 
@@ -165,6 +168,7 @@ export default function App() {
   }, [settings]);
 
   const baseUrl = `http://${settings.address}:${settings.port}`;
+  const apiBase = `${baseUrl}/api/${settings.apiVersion}`;
   const authHeader = useMemo(
     () => "Basic " + btoa(`${settings.login}:${settings.password}`),
     [settings.login, settings.password],
@@ -175,19 +179,22 @@ export default function App() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${baseUrl}/api/v2/status`, {
+        const res = await fetch(`${apiBase}/status`, {
           method: "GET",
           headers: { Authorization: authHeader },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         let data: any;
+        let pretty = text;
         try {
           data = JSON.parse(text);
+          pretty = JSON.stringify(data, null, 2);
         } catch {
           data = { raw: text };
         }
-        setRawResponse(text);
+        setRawResponse(pretty);
+
         const newStatus = data?.status;
         if (newStatus === "ready" && prevStatusRef.current && prevStatusRef.current !== "ready") {
           playMelody(settingsRef.current);
@@ -203,14 +210,15 @@ export default function App() {
         if (resetTimer) setCountdown(settingsRef.current.refreshInterval);
       }
     },
-    [baseUrl, authHeader],
+    [apiBase, authHeader],
   );
 
   const doInit = useCallback(async () => {
     setIniting(true);
+
     setError(null);
     try {
-      const res = await fetch(`${baseUrl}/api/v2/init`, {
+      const res = await fetch(`${apiBase}/init`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -227,7 +235,8 @@ export default function App() {
     } finally {
       setIniting(false);
     }
-  }, [baseUrl, authHeader, settings.token, fetchStatus]);
+  }, [apiBase, authHeader, settings.token, fetchStatus]);
+
 
   // initial fetch on mount
   useEffect(() => {
@@ -359,27 +368,28 @@ export default function App() {
 
         {/* Actions */}
         <Card className="p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-3">
             <Button
               onClick={() => fetchStatus(true)}
               disabled={loading}
               variant="outline"
-              className="flex-1"
               size="lg"
+              className="w-full whitespace-normal"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <RefreshCw className="h-4 w-4 shrink-0" />}
               Получить статус
             </Button>
             <Button
               onClick={doInit}
               disabled={initing || !settings.token}
-              className="flex-1"
               size="lg"
+              className="w-full whitespace-normal"
             >
-              {initing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {initing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Play className="h-4 w-4 shrink-0" />}
               Запустить инициализацию
             </Button>
           </div>
+
 
           <Separator />
 
@@ -572,6 +582,18 @@ function SettingsDialog({
                 <Input value={settings.port} onChange={(e) => set("port", e.target.value)} />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label>Версия API</Label>
+              <Input
+                value={settings.apiVersion}
+                placeholder="v2"
+                onChange={(e) => set("apiVersion", e.target.value.trim() || "v2")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Подставляется в URL: <code>/api/{settings.apiVersion}/...</code>
+              </p>
+            </div>
+
           </section>
 
           <Separator />
