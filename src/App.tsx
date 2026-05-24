@@ -493,7 +493,7 @@ function SettingsDialog({
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="icon" aria-label="Настройки">
-          <Settings className="h-5 w-5" />
+          <SettingsIcon className="h-5 w-5" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
