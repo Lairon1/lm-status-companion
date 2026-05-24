@@ -218,7 +218,7 @@ export default function App() {
 
     setError(null);
     try {
-      const res = await fetch(`${baseUrl}/api/v2/init`, {
+      const res = await fetch(`${apiBase}/init`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -235,7 +235,8 @@ export default function App() {
     } finally {
       setIniting(false);
     }
-  }, [baseUrl, authHeader, settings.token, fetchStatus]);
+  }, [apiBase, authHeader, settings.token, fetchStatus]);
+
 
   // initial fetch on mount
   useEffect(() => {
