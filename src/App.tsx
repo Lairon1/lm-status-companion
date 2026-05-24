@@ -160,6 +160,11 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [countdown, setCountdown] = useState<number>(settings.refreshInterval);
+  const [config, setConfig] = useState<any>(null);
+  const [configRaw, setConfigRaw] = useState<string | null>(null);
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [tab, setTab] = useState<string>("init");
   const prevStatusRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
