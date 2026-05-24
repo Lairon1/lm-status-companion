@@ -150,6 +150,7 @@ function formatUptime(seconds?: number) {
 export default function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [status, setStatus] = useState<any>(null);
+  const [rawResponse, setRawResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initing, setIniting] = useState(false);
   const [error, setError] = useState<string | null>(null);
