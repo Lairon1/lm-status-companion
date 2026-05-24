@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, RefreshCw, Play, CheckCircle2, AlertCircle, Loader2, Wifi, WifiOff, Database, Clock, Server, Hash, Calendar, Activity, FileText, Shield, Tag } from "lucide-react";
+import { Settings as SettingsIcon, RefreshCw, Play, AlertCircle, Loader2, Wifi, WifiOff, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
