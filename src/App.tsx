@@ -368,27 +368,28 @@ export default function App() {
 
         {/* Actions */}
         <Card className="p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-3">
             <Button
               onClick={() => fetchStatus(true)}
               disabled={loading}
               variant="outline"
-              className="flex-1"
               size="lg"
+              className="w-full whitespace-normal"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <RefreshCw className="h-4 w-4 shrink-0" />}
               Получить статус
             </Button>
             <Button
               onClick={doInit}
               disabled={initing || !settings.token}
-              className="flex-1"
               size="lg"
+              className="w-full whitespace-normal"
             >
-              {initing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {initing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Play className="h-4 w-4 shrink-0" />}
               Запустить инициализацию
             </Button>
           </div>
+
 
           <Separator />
 
