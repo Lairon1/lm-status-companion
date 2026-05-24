@@ -180,7 +180,14 @@ export default function App() {
           headers: { Authorization: authHeader },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const text = await res.text();
+        let data: any;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { raw: text };
+        }
+        setRawResponse(text);
         const newStatus = data?.status;
         if (newStatus === "ready" && prevStatusRef.current && prevStatusRef.current !== "ready") {
           playMelody(settingsRef.current);
