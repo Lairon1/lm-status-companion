@@ -408,6 +408,8 @@ export default function App() {
             </div>
           )}
         </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
