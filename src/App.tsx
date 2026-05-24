@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings as SettingsIcon, RefreshCw, Play, AlertCircle, Loader2, Wifi, WifiOff, Clock, FileJson, ChevronDown } from "lucide-react";
+import { Settings as SettingsIcon, RefreshCw, Play, AlertCircle, Loader2, Wifi, WifiOff, Clock, FileJson, ChevronDown, Settings2, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -159,6 +160,11 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [countdown, setCountdown] = useState<number>(settings.refreshInterval);
+  const [config, setConfig] = useState<any>(null);
+  const [configRaw, setConfigRaw] = useState<string | null>(null);
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [tab, setTab] = useState<string>("init");
   const prevStatusRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -237,12 +243,47 @@ export default function App() {
     }
   }, [apiBase, authHeader, settings.token, fetchStatus]);
 
+  const fetchConfig = useCallback(async () => {
+    setConfigLoading(true);
+    setConfigError(null);
+    try {
+      const res = await fetch(`${apiBase}/config`, {
+        method: "GET",
+        headers: { Authorization: authHeader },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      let data: any;
+      let pretty = text;
+      try {
+        data = JSON.parse(text);
+        pretty = JSON.stringify(data, null, 2);
+      } catch {
+        data = { raw: text };
+      }
+      setConfigRaw(pretty);
+      setConfig(data);
+    } catch (e: any) {
+      setConfigError(e?.message ?? "Ошибка запроса конфигурации");
+    } finally {
+      setConfigLoading(false);
+    }
+  }, [apiBase, authHeader]);
 
   // initial fetch on mount
   useEffect(() => {
     fetchStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // fetch config on first switch to config tab
+  useEffect(() => {
+    if (tab === "config" && config === null && !configLoading) {
+      fetchConfig();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
 
   // auto-refresh countdown
   useEffect(() => {
@@ -279,147 +320,202 @@ export default function App() {
           <SettingsDialog settings={settings} onChange={setSettings} />
         </header>
 
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left column */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Status Card */}
-        <Card className="p-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-3xl border-2", statusMeta.color)}>
-                {statusMeta.emoji}
+    <Tabs value={tab} onValueChange={setTab} className="w-full">
+      <TabsList className="grid grid-cols-2 w-full max-w-md">
+        <TabsTrigger value="init" className="gap-2"><Rocket className="h-4 w-4" /> Инициализатор</TabsTrigger>
+        <TabsTrigger value="config" className="gap-2"><Settings2 className="h-4 w-4" /> Конфиг</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="init" className="mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Status Card */}
+            <Card className="p-6">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-3xl border-2", statusMeta.color)}>
+                    {statusMeta.emoji}
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">Статус системы</div>
+                    <div className="text-2xl font-bold">{statusMeta.label}</div>
+                    {status?.status && status.status !== statusMeta.label.toLowerCase() && (
+                      <div className="text-xs text-muted-foreground font-mono">{status.status}</div>
+                    )}
+                  </div>
+                </div>
+                {loading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
               </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">Статус системы</div>
-                <div className="text-2xl font-bold">{statusMeta.label}</div>
-                {status?.status && status.status !== statusMeta.label.toLowerCase() && (
-                  <div className="text-xs text-muted-foreground font-mono">{status.status}</div>
-                )}
-              </div>
-            </div>
-            {loading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+
+              {error && (
+                <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Info blocks */}
+              {status && <StatusBlocks status={status} />}
+
+              {rawResponse && (
+                <details className="group mt-4">
+                  <summary className="flex items-center gap-2 cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                    <FileJson className="h-4 w-4" />
+                    <span>Сырой ответ сервера</span>
+                  </summary>
+                  <pre className="mt-2 p-3 rounded-lg bg-muted/60 text-xs font-mono overflow-auto max-h-80 border border-border whitespace-pre-wrap break-all">
+                    {rawResponse}
+                  </pre>
+                </details>
+              )}
+
+              {!status && !loading && !error && (
+                <div className="text-sm text-muted-foreground text-center py-6">
+                  Нет данных. Нажмите «Получить статус».
+                </div>
+              )}
+            </Card>
           </div>
 
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
+          {/* Right column */}
+          <div className="space-y-6">
+            {/* Credentials */}
+            <Card className="p-6 space-y-4">
+              <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="login">Логин</Label>
+                  <Input
+                    id="login"
+                    value={settings.login}
+                    onChange={(e) => setSettings({ ...settings, login: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Пароль</Label>
+                  <Input
+                    id="password"
+                    type="text"
+                    value={settings.password}
+                    onChange={(e) => setSettings({ ...settings, password: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="token">Токен</Label>
+                <Input
+                  id="token"
+                  value={settings.token}
+                  placeholder="Вставьте токен"
+                  onChange={(e) => setSettings({ ...settings, token: e.target.value })}
+                />
+              </div>
+            </Card>
+
+            {/* Actions */}
+            <Card className="p-6 space-y-4">
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => fetchStatus(true)}
+                  disabled={loading}
+                  variant="outline"
+                  size="lg"
+                  className="w-full whitespace-normal"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <RefreshCw className="h-4 w-4 shrink-0" />}
+                  Получить статус
+                </Button>
+                <Button
+                  onClick={doInit}
+                  disabled={initing || !settings.token}
+                  size="lg"
+                  className="w-full whitespace-normal"
+                >
+                  {initing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Play className="h-4 w-4 shrink-0" />}
+                  Запустить инициализацию
+                </Button>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between gap-4">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <Checkbox
+                    checked={settings.autoRefresh}
+                    onCheckedChange={(c) => setSettings({ ...settings, autoRefresh: !!c })}
+                  />
+                  <div>
+                    <div className="text-sm font-medium">🔄 Авто-обновление статуса</div>
+                    <div className="text-xs text-muted-foreground">каждые {settings.refreshInterval} сек</div>
+                  </div>
+                </label>
+                {settings.autoRefresh && (
+                  <div className="flex items-center gap-2 text-sm font-mono">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="tabular-nums">{countdown}s</span>
+                  </div>
+                )}
+              </div>
+
+              {lastFetch && (
+                <div className="text-xs text-muted-foreground">
+                  Последнее обновление: {lastFetch.toLocaleTimeString("ru-RU")}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="config" className="mt-6">
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="font-semibold flex items-center gap-2">
+              <Settings2 className="h-5 w-5" /> Конфигурация сервиса
+            </h2>
+            <Button
+              onClick={fetchConfig}
+              disabled={configLoading}
+              variant="outline"
+              size="sm"
+            >
+              {configLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Обновить
+            </Button>
+          </div>
+
+          {configError && (
+            <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>{error}</span>
+              <span>{configError}</span>
             </div>
           )}
 
-          {/* Info blocks */}
-          {status && <StatusBlocks status={status} />}
+          {config && <ConfigBlocks config={config} />}
 
-          {rawResponse && (
-            <details className="group mt-4">
+          {configRaw && (
+            <details className="group">
               <summary className="flex items-center gap-2 cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
                 <FileJson className="h-4 w-4" />
                 <span>Сырой ответ сервера</span>
               </summary>
-              <pre className="mt-2 p-3 rounded-lg bg-muted/60 text-xs font-mono overflow-auto max-h-80 border border-border whitespace-pre-wrap break-all">
-                {rawResponse}
+              <pre className="mt-2 p-3 rounded-lg bg-muted/60 text-xs font-mono overflow-auto max-h-96 border border-border whitespace-pre-wrap break-all">
+                {configRaw}
               </pre>
             </details>
           )}
 
-          {!status && !loading && !error && (
+          {!config && !configLoading && !configError && (
             <div className="text-sm text-muted-foreground text-center py-6">
-              Нет данных. Нажмите «Получить статус».
+              Нет данных. Нажмите «Обновить».
             </div>
           )}
         </Card>
-      </div>
-
-      {/* Right column */}
-      <div className="space-y-6">
-        {/* Credentials */}
-        <Card className="p-6 space-y-4">
-          <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="login">Логин</Label>
-              <Input
-                id="login"
-                value={settings.login}
-                onChange={(e) => setSettings({ ...settings, login: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Пароль</Label>
-              <Input
-                id="password"
-                type="text"
-                value={settings.password}
-                onChange={(e) => setSettings({ ...settings, password: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="token">Токен</Label>
-            <Input
-              id="token"
-              value={settings.token}
-              placeholder="Вставьте токен"
-              onChange={(e) => setSettings({ ...settings, token: e.target.value })}
-            />
-          </div>
-        </Card>
-
-        {/* Actions */}
-        <Card className="p-6 space-y-4">
-          <div className="flex flex-col gap-3">
-            <Button
-              onClick={() => fetchStatus(true)}
-              disabled={loading}
-              variant="outline"
-              size="lg"
-              className="w-full whitespace-normal"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <RefreshCw className="h-4 w-4 shrink-0" />}
-              Получить статус
-            </Button>
-            <Button
-              onClick={doInit}
-              disabled={initing || !settings.token}
-              size="lg"
-              className="w-full whitespace-normal"
-            >
-              {initing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Play className="h-4 w-4 shrink-0" />}
-              Запустить инициализацию
-            </Button>
-          </div>
-
-
-          <Separator />
-
-          <div className="flex items-center justify-between gap-4">
-            <label className="flex items-center gap-3 cursor-pointer select-none">
-              <Checkbox
-                checked={settings.autoRefresh}
-                onCheckedChange={(c) => setSettings({ ...settings, autoRefresh: !!c })}
-              />
-              <div>
-                <div className="text-sm font-medium">🔄 Авто-обновление статуса</div>
-                <div className="text-xs text-muted-foreground">каждые {settings.refreshInterval} сек</div>
-              </div>
-            </label>
-            {settings.autoRefresh && (
-              <div className="flex items-center gap-2 text-sm font-mono">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="tabular-nums">{countdown}s</span>
-              </div>
-            )}
-          </div>
-
-          {lastFetch && (
-            <div className="text-xs text-muted-foreground">
-              Последнее обновление: {lastFetch.toLocaleTimeString("ru-RU")}
-            </div>
-          )}
-        </Card>
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   </div>
 </div>
   );
@@ -546,6 +642,124 @@ function DbStat({ emoji, label, value }: { emoji: string; label: string; value: 
     </div>
   );
 }
+
+function formatDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return "0";
+  const units: [number, string][] = [
+    [86400000, "д"],
+    [3600000, "ч"],
+    [60000, "м"],
+    [1000, "с"],
+  ];
+  const parts: string[] = [];
+  let rest = ms;
+  for (const [u, name] of units) {
+    const v = Math.floor(rest / u);
+    if (v > 0) {
+      parts.push(`${v}${name}`);
+      rest -= v * u;
+    }
+    if (parts.length >= 2) break;
+  }
+  if (parts.length === 0) parts.push(`${ms}мс`);
+  return parts.join(" ");
+}
+
+const CONFIG_FIELD_META: Record<string, { emoji: string; label: string; kind?: "duration" | "url" | "array" | "bool" | "text" | "number" }> = {
+  ticketStorePeriod: { emoji: "🎫", label: "Хранение тикетов", kind: "duration" },
+  syncMaxRetry: { emoji: "🔁", label: "Макс. интервал ретраев синка", kind: "duration" },
+  statsStorePeriod: { emoji: "📊", label: "Хранение статистики", kind: "duration" },
+  statsDbUrl: { emoji: "🌐", label: "URL базы статистики", kind: "url" },
+  soldStorePeriod: { emoji: "🛒", label: "Хранение продаж", kind: "duration" },
+  sendStatsInterval: { emoji: "📤", label: "Интервал отправки статистики", kind: "duration" },
+  sendStats: { emoji: "📈", label: "Отправлять статистику", kind: "bool" },
+  replicationInstUrl: { emoji: "🔗", label: "URL репликации", kind: "url" },
+  operationMode: { emoji: "⚙️", label: "Режим работы", kind: "text" },
+  minPrice: { emoji: "💰", label: "Min price", kind: "array" },
+  logLevel: { emoji: "📋", label: "Уровень логов", kind: "text" },
+  initCount: { emoji: "🔢", label: "Кол-во инициализаций", kind: "number" },
+  dbRetryMin: { emoji: "⏱️", label: "БД ретрай (мин)", kind: "duration" },
+  dbRetryMax: { emoji: "⏲️", label: "БД ретрай (макс)", kind: "duration" },
+  blockedGtin: { emoji: "🚫", label: "Заблокированные GTIN", kind: "array" },
+  blockedCis: { emoji: "🛑", label: "Заблокированные CIS", kind: "array" },
+  blockSyncPeriod: { emoji: "🔒", label: "Период блок-синка", kind: "duration" },
+  authorization: { emoji: "🔑", label: "Методы авторизации", kind: "array" },
+};
+
+function renderConfigValue(value: any, kind?: string): React.ReactNode {
+  if (value === null || value === undefined) return <span className="text-muted-foreground">—</span>;
+  if (kind === "duration" && typeof value === "number") {
+    return (
+      <span>
+        {formatDuration(value)}{" "}
+        <span className="text-xs text-muted-foreground font-mono">({value.toLocaleString("ru-RU")} мс)</span>
+      </span>
+    );
+  }
+  if (kind === "bool" || typeof value === "boolean") {
+    return value ? "✅ Да" : "⛔ Нет";
+  }
+  if (kind === "url" || (typeof value === "string" && /^https?:\/\//.test(value))) {
+    return <span className="text-xs font-mono break-all">{value}</span>;
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span className="text-muted-foreground">пусто</span>;
+    return (
+      <div className="flex flex-wrap gap-1 justify-end">
+        {value.map((v, i) => (
+          <span key={i} className="px-1.5 py-0.5 rounded bg-background/60 text-xs font-mono border">
+            {String(v)}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  if (typeof value === "object") {
+    return <code className="text-xs">{JSON.stringify(value)}</code>;
+  }
+  return String(value);
+}
+
+function ConfigBlocks({ config }: { config: any }) {
+  if (!config || typeof config !== "object") return null;
+  const tokenStore = config.tokensStorePeriod;
+  const knownKeys = new Set(Object.keys(CONFIG_FIELD_META).concat(["tokensStorePeriod"]));
+  const orderedKeys = Object.keys(CONFIG_FIELD_META).filter((k) => k in config);
+  const extraKeys = Object.keys(config).filter((k) => !knownKeys.has(k));
+
+  return (
+    <div className="space-y-3">
+      {tokenStore && typeof tokenStore === "object" && (
+        <div className="p-3 rounded-lg bg-muted/40 space-y-2">
+          <div className="text-sm font-medium flex items-center gap-2">🗝️ Период хранения токенов</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {Object.entries(tokenStore).map(([k, v]) => (
+              <InfoRow key={k} emoji="•" label={k} value={renderConfigValue(v, "duration")} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {orderedKeys.map((k) => {
+          const meta = CONFIG_FIELD_META[k];
+          return (
+            <InfoRow
+              key={k}
+              emoji={meta.emoji}
+              label={meta.label}
+              value={renderConfigValue(config[k], meta.kind)}
+            />
+          );
+        })}
+        {extraKeys.map((k) => (
+          <InfoRow key={k} emoji="•" label={k} value={renderConfigValue(config[k])} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 function SettingsDialog({
   settings,
