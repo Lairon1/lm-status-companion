@@ -270,8 +270,11 @@ export default function App() {
           <SettingsDialog settings={settings} onChange={setSettings} />
         </header>
 
-        {/* Status Card */}
-        <Card className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Status Card */}
+            <Card className="p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
               <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-3xl border-2", statusMeta.color)}>
