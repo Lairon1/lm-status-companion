@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings as SettingsIcon, RefreshCw, Play, AlertCircle, Loader2, Wifi, WifiOff, Clock } from "lucide-react";
+import { Settings as SettingsIcon, RefreshCw, Play, AlertCircle, Loader2, Wifi, WifiOff, Clock, FileJson, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,6 +150,7 @@ function formatUptime(seconds?: number) {
 export default function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [status, setStatus] = useState<any>(null);
+  const [rawResponse, setRawResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initing, setIniting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,7 +180,14 @@ export default function App() {
           headers: { Authorization: authHeader },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const text = await res.text();
+        let data: any;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { raw: text };
+        }
+        setRawResponse(text);
         const newStatus = data?.status;
         if (newStatus === "ready" && prevStatusRef.current && prevStatusRef.current !== "ready") {
           playMelody(settingsRef.current);
@@ -289,6 +297,19 @@ export default function App() {
 
           {/* Info blocks */}
           {status && <StatusBlocks status={status} />}
+
+          {rawResponse && (
+            <details className="group mt-4">
+              <summary className="flex items-center gap-2 cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                <FileJson className="h-4 w-4" />
+                <span>Сырой ответ сервера</span>
+              </summary>
+              <pre className="mt-2 p-3 rounded-lg bg-muted/60 text-xs font-mono overflow-auto max-h-80 border border-border whitespace-pre-wrap break-all">
+                {rawResponse}
+              </pre>
+            </details>
+          )}
 
           {!status && !loading && !error && (
             <div className="text-sm text-muted-foreground text-center py-6">
