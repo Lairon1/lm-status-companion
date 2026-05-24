@@ -256,7 +256,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <header className="flex items-center justify-between">
           <div>
@@ -270,6 +270,9 @@ export default function App() {
           <SettingsDialog settings={settings} onChange={setSettings} />
         </header>
 
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left column */}
+      <div className="lg:col-span-2 space-y-6">
         {/* Status Card */}
         <Card className="p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
@@ -317,7 +320,10 @@ export default function App() {
             </div>
           )}
         </Card>
+      </div>
 
+      {/* Right column */}
+      <div className="space-y-6">
         {/* Credentials */}
         <Card className="p-6 space-y-4">
           <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
@@ -404,6 +410,8 @@ export default function App() {
         </Card>
       </div>
     </div>
+  </div>
+</div>
   );
 }
 
