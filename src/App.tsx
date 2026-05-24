@@ -58,22 +58,33 @@ function playMelody(s: Settings) {
   try {
     const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
     const ctx = new Ctx();
-    const notes = [s.notificationFrequency, s.notificationFrequency * 1.25, s.notificationFrequency * 1.5];
-    notes.forEach((freq, i) => {
+    const volume = s.notificationVolume;
+    const gap = 0.12;
+    // Pleasant ascending C-major arpeggio + closing note
+    const notes = [
+      { freq: 523.25, duration: 0.18 }, // C5
+      { freq: 659.25, duration: 0.18 }, // E5
+      { freq: 783.99, duration: 0.18 }, // G5
+      { freq: 1046.50, duration: 0.28 }, // C6
+    ];
+    let t = ctx.currentTime +  0.02;
+    notes.forEach((n) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.frequency.value = freq;
-      osc.type = "sine";
-      const start = ctx.currentTime + i * (s.notificationDuration / 1000);
-      const end = start + s.notificationDuration / 1000;
+      osc.type = "triangle";
+      osc.frequency.value = n.freq;
+      const start = t;
+      const end = t + n.duration;
       gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(s.notificationVolume, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, end);
+      gain.gain.linearRampToValueAtTime(volume, start + 0.03);
+      gain.gain.setTargetAtTime(1.0, end - 0.05, 0.04);
+      gain.gain.linearRampToValueAtTime(0, end);
       osc.connect(gain).connect(ctx.destination);
       osc.start(start);
       osc.stop(end);
+      t = end + gap;
     });
-    setTimeout(() => ctx.close(), notes.length * s.notificationDuration + 500);
+    setTimeout(() => ctx.close(), (t - ctx.currentTime) * 1000 + 200);
   } catch (e) {
     console.error("Melody error", e);
   }
