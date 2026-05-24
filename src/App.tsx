@@ -643,6 +643,124 @@ function DbStat({ emoji, label, value }: { emoji: string; label: string; value: 
   );
 }
 
+function formatDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return "0";
+  const units: [number, string][] = [
+    [86400000, "д"],
+    [3600000, "ч"],
+    [60000, "м"],
+    [1000, "с"],
+  ];
+  const parts: string[] = [];
+  let rest = ms;
+  for (const [u, name] of units) {
+    const v = Math.floor(rest / u);
+    if (v > 0) {
+      parts.push(`${v}${name}`);
+      rest -= v * u;
+    }
+    if (parts.length >= 2) break;
+  }
+  if (parts.length === 0) parts.push(`${ms}мс`);
+  return parts.join(" ");
+}
+
+const CONFIG_FIELD_META: Record<string, { emoji: string; label: string; kind?: "duration" | "url" | "array" | "bool" | "text" | "number" }> = {
+  ticketStorePeriod: { emoji: "🎫", label: "Хранение тикетов", kind: "duration" },
+  syncMaxRetry: { emoji: "🔁", label: "Макс. интервал ретраев синка", kind: "duration" },
+  statsStorePeriod: { emoji: "📊", label: "Хранение статистики", kind: "duration" },
+  statsDbUrl: { emoji: "🌐", label: "URL базы статистики", kind: "url" },
+  soldStorePeriod: { emoji: "🛒", label: "Хранение продаж", kind: "duration" },
+  sendStatsInterval: { emoji: "📤", label: "Интервал отправки статистики", kind: "duration" },
+  sendStats: { emoji: "📈", label: "Отправлять статистику", kind: "bool" },
+  replicationInstUrl: { emoji: "🔗", label: "URL репликации", kind: "url" },
+  operationMode: { emoji: "⚙️", label: "Режим работы", kind: "text" },
+  minPrice: { emoji: "💰", label: "Min price", kind: "array" },
+  logLevel: { emoji: "📋", label: "Уровень логов", kind: "text" },
+  initCount: { emoji: "🔢", label: "Кол-во инициализаций", kind: "number" },
+  dbRetryMin: { emoji: "⏱️", label: "БД ретрай (мин)", kind: "duration" },
+  dbRetryMax: { emoji: "⏲️", label: "БД ретрай (макс)", kind: "duration" },
+  blockedGtin: { emoji: "🚫", label: "Заблокированные GTIN", kind: "array" },
+  blockedCis: { emoji: "🛑", label: "Заблокированные CIS", kind: "array" },
+  blockSyncPeriod: { emoji: "🔒", label: "Период блок-синка", kind: "duration" },
+  authorization: { emoji: "🔑", label: "Методы авторизации", kind: "array" },
+};
+
+function renderConfigValue(value: any, kind?: string): React.ReactNode {
+  if (value === null || value === undefined) return <span className="text-muted-foreground">—</span>;
+  if (kind === "duration" && typeof value === "number") {
+    return (
+      <span>
+        {formatDuration(value)}{" "}
+        <span className="text-xs text-muted-foreground font-mono">({value.toLocaleString("ru-RU")} мс)</span>
+      </span>
+    );
+  }
+  if (kind === "bool" || typeof value === "boolean") {
+    return value ? "✅ Да" : "⛔ Нет";
+  }
+  if (kind === "url" || (typeof value === "string" && /^https?:\/\//.test(value))) {
+    return <span className="text-xs font-mono break-all">{value}</span>;
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span className="text-muted-foreground">пусто</span>;
+    return (
+      <div className="flex flex-wrap gap-1 justify-end">
+        {value.map((v, i) => (
+          <span key={i} className="px-1.5 py-0.5 rounded bg-background/60 text-xs font-mono border">
+            {String(v)}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  if (typeof value === "object") {
+    return <code className="text-xs">{JSON.stringify(value)}</code>;
+  }
+  return String(value);
+}
+
+function ConfigBlocks({ config }: { config: any }) {
+  if (!config || typeof config !== "object") return null;
+  const tokenStore = config.tokensStorePeriod;
+  const knownKeys = new Set(Object.keys(CONFIG_FIELD_META).concat(["tokensStorePeriod"]));
+  const orderedKeys = Object.keys(CONFIG_FIELD_META).filter((k) => k in config);
+  const extraKeys = Object.keys(config).filter((k) => !knownKeys.has(k));
+
+  return (
+    <div className="space-y-3">
+      {tokenStore && typeof tokenStore === "object" && (
+        <div className="p-3 rounded-lg bg-muted/40 space-y-2">
+          <div className="text-sm font-medium flex items-center gap-2">🗝️ Период хранения токенов</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {Object.entries(tokenStore).map(([k, v]) => (
+              <InfoRow key={k} emoji="•" label={k} value={renderConfigValue(v, "duration")} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {orderedKeys.map((k) => {
+          const meta = CONFIG_FIELD_META[k];
+          return (
+            <InfoRow
+              key={k}
+              emoji={meta.emoji}
+              label={meta.label}
+              value={renderConfigValue(config[k], meta.kind)}
+            />
+          );
+        })}
+        {extraKeys.map((k) => (
+          <InfoRow key={k} emoji="•" label={k} value={renderConfigValue(config[k])} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 function SettingsDialog({
   settings,
   onChange,
