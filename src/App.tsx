@@ -556,7 +556,7 @@ function SettingsDialog({
               </div>
               <input
                 type="range"
-                min={1}
+                min={0}
                 max={1}
                 step={0.05}
                 value={settings.notificationVolume}
