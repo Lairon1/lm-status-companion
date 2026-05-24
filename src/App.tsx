@@ -256,7 +256,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <header className="flex items-center justify-between">
           <div>
