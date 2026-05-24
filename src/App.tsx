@@ -210,11 +210,12 @@ export default function App() {
         if (resetTimer) setCountdown(settingsRef.current.refreshInterval);
       }
     },
-    [baseUrl, authHeader],
+    [apiBase, authHeader],
   );
 
   const doInit = useCallback(async () => {
     setIniting(true);
+
     setError(null);
     try {
       const res = await fetch(`${baseUrl}/api/v2/init`, {
