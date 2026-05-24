@@ -243,12 +243,47 @@ export default function App() {
     }
   }, [apiBase, authHeader, settings.token, fetchStatus]);
 
+  const fetchConfig = useCallback(async () => {
+    setConfigLoading(true);
+    setConfigError(null);
+    try {
+      const res = await fetch(`${apiBase}/config`, {
+        method: "GET",
+        headers: { Authorization: authHeader },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      let data: any;
+      let pretty = text;
+      try {
+        data = JSON.parse(text);
+        pretty = JSON.stringify(data, null, 2);
+      } catch {
+        data = { raw: text };
+      }
+      setConfigRaw(pretty);
+      setConfig(data);
+    } catch (e: any) {
+      setConfigError(e?.message ?? "Ошибка запроса конфигурации");
+    } finally {
+      setConfigLoading(false);
+    }
+  }, [apiBase, authHeader]);
 
   // initial fetch on mount
   useEffect(() => {
     fetchStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // fetch config on first switch to config tab
+  useEffect(() => {
+    if (tab === "config" && config === null && !configLoading) {
+      fetchConfig();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
 
   // auto-refresh countdown
   useEffect(() => {
