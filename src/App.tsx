@@ -320,147 +320,202 @@ export default function App() {
           <SettingsDialog settings={settings} onChange={setSettings} />
         </header>
 
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left column */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Status Card */}
-        <Card className="p-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-3xl border-2", statusMeta.color)}>
-                {statusMeta.emoji}
+    <Tabs value={tab} onValueChange={setTab} className="w-full">
+      <TabsList className="grid grid-cols-2 w-full max-w-md">
+        <TabsTrigger value="init" className="gap-2"><Rocket className="h-4 w-4" /> Инициализатор</TabsTrigger>
+        <TabsTrigger value="config" className="gap-2"><Settings2 className="h-4 w-4" /> Конфиг</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="init" className="mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Status Card */}
+            <Card className="p-6">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-3xl border-2", statusMeta.color)}>
+                    {statusMeta.emoji}
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">Статус системы</div>
+                    <div className="text-2xl font-bold">{statusMeta.label}</div>
+                    {status?.status && status.status !== statusMeta.label.toLowerCase() && (
+                      <div className="text-xs text-muted-foreground font-mono">{status.status}</div>
+                    )}
+                  </div>
+                </div>
+                {loading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
               </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">Статус системы</div>
-                <div className="text-2xl font-bold">{statusMeta.label}</div>
-                {status?.status && status.status !== statusMeta.label.toLowerCase() && (
-                  <div className="text-xs text-muted-foreground font-mono">{status.status}</div>
-                )}
-              </div>
-            </div>
-            {loading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+
+              {error && (
+                <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Info blocks */}
+              {status && <StatusBlocks status={status} />}
+
+              {rawResponse && (
+                <details className="group mt-4">
+                  <summary className="flex items-center gap-2 cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                    <FileJson className="h-4 w-4" />
+                    <span>Сырой ответ сервера</span>
+                  </summary>
+                  <pre className="mt-2 p-3 rounded-lg bg-muted/60 text-xs font-mono overflow-auto max-h-80 border border-border whitespace-pre-wrap break-all">
+                    {rawResponse}
+                  </pre>
+                </details>
+              )}
+
+              {!status && !loading && !error && (
+                <div className="text-sm text-muted-foreground text-center py-6">
+                  Нет данных. Нажмите «Получить статус».
+                </div>
+              )}
+            </Card>
           </div>
 
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
+          {/* Right column */}
+          <div className="space-y-6">
+            {/* Credentials */}
+            <Card className="p-6 space-y-4">
+              <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="login">Логин</Label>
+                  <Input
+                    id="login"
+                    value={settings.login}
+                    onChange={(e) => setSettings({ ...settings, login: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Пароль</Label>
+                  <Input
+                    id="password"
+                    type="text"
+                    value={settings.password}
+                    onChange={(e) => setSettings({ ...settings, password: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="token">Токен</Label>
+                <Input
+                  id="token"
+                  value={settings.token}
+                  placeholder="Вставьте токен"
+                  onChange={(e) => setSettings({ ...settings, token: e.target.value })}
+                />
+              </div>
+            </Card>
+
+            {/* Actions */}
+            <Card className="p-6 space-y-4">
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => fetchStatus(true)}
+                  disabled={loading}
+                  variant="outline"
+                  size="lg"
+                  className="w-full whitespace-normal"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <RefreshCw className="h-4 w-4 shrink-0" />}
+                  Получить статус
+                </Button>
+                <Button
+                  onClick={doInit}
+                  disabled={initing || !settings.token}
+                  size="lg"
+                  className="w-full whitespace-normal"
+                >
+                  {initing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Play className="h-4 w-4 shrink-0" />}
+                  Запустить инициализацию
+                </Button>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between gap-4">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <Checkbox
+                    checked={settings.autoRefresh}
+                    onCheckedChange={(c) => setSettings({ ...settings, autoRefresh: !!c })}
+                  />
+                  <div>
+                    <div className="text-sm font-medium">🔄 Авто-обновление статуса</div>
+                    <div className="text-xs text-muted-foreground">каждые {settings.refreshInterval} сек</div>
+                  </div>
+                </label>
+                {settings.autoRefresh && (
+                  <div className="flex items-center gap-2 text-sm font-mono">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="tabular-nums">{countdown}s</span>
+                  </div>
+                )}
+              </div>
+
+              {lastFetch && (
+                <div className="text-xs text-muted-foreground">
+                  Последнее обновление: {lastFetch.toLocaleTimeString("ru-RU")}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="config" className="mt-6">
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="font-semibold flex items-center gap-2">
+              <Settings2 className="h-5 w-5" /> Конфигурация сервиса
+            </h2>
+            <Button
+              onClick={fetchConfig}
+              disabled={configLoading}
+              variant="outline"
+              size="sm"
+            >
+              {configLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Обновить
+            </Button>
+          </div>
+
+          {configError && (
+            <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>{error}</span>
+              <span>{configError}</span>
             </div>
           )}
 
-          {/* Info blocks */}
-          {status && <StatusBlocks status={status} />}
+          {config && <ConfigBlocks config={config} />}
 
-          {rawResponse && (
-            <details className="group mt-4">
+          {configRaw && (
+            <details className="group">
               <summary className="flex items-center gap-2 cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
                 <FileJson className="h-4 w-4" />
                 <span>Сырой ответ сервера</span>
               </summary>
-              <pre className="mt-2 p-3 rounded-lg bg-muted/60 text-xs font-mono overflow-auto max-h-80 border border-border whitespace-pre-wrap break-all">
-                {rawResponse}
+              <pre className="mt-2 p-3 rounded-lg bg-muted/60 text-xs font-mono overflow-auto max-h-96 border border-border whitespace-pre-wrap break-all">
+                {configRaw}
               </pre>
             </details>
           )}
 
-          {!status && !loading && !error && (
+          {!config && !configLoading && !configError && (
             <div className="text-sm text-muted-foreground text-center py-6">
-              Нет данных. Нажмите «Получить статус».
+              Нет данных. Нажмите «Обновить».
             </div>
           )}
         </Card>
-      </div>
-
-      {/* Right column */}
-      <div className="space-y-6">
-        {/* Credentials */}
-        <Card className="p-6 space-y-4">
-          <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="login">Логин</Label>
-              <Input
-                id="login"
-                value={settings.login}
-                onChange={(e) => setSettings({ ...settings, login: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Пароль</Label>
-              <Input
-                id="password"
-                type="text"
-                value={settings.password}
-                onChange={(e) => setSettings({ ...settings, password: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="token">Токен</Label>
-            <Input
-              id="token"
-              value={settings.token}
-              placeholder="Вставьте токен"
-              onChange={(e) => setSettings({ ...settings, token: e.target.value })}
-            />
-          </div>
-        </Card>
-
-        {/* Actions */}
-        <Card className="p-6 space-y-4">
-          <div className="flex flex-col gap-3">
-            <Button
-              onClick={() => fetchStatus(true)}
-              disabled={loading}
-              variant="outline"
-              size="lg"
-              className="w-full whitespace-normal"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <RefreshCw className="h-4 w-4 shrink-0" />}
-              Получить статус
-            </Button>
-            <Button
-              onClick={doInit}
-              disabled={initing || !settings.token}
-              size="lg"
-              className="w-full whitespace-normal"
-            >
-              {initing ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Play className="h-4 w-4 shrink-0" />}
-              Запустить инициализацию
-            </Button>
-          </div>
-
-
-          <Separator />
-
-          <div className="flex items-center justify-between gap-4">
-            <label className="flex items-center gap-3 cursor-pointer select-none">
-              <Checkbox
-                checked={settings.autoRefresh}
-                onCheckedChange={(c) => setSettings({ ...settings, autoRefresh: !!c })}
-              />
-              <div>
-                <div className="text-sm font-medium">🔄 Авто-обновление статуса</div>
-                <div className="text-xs text-muted-foreground">каждые {settings.refreshInterval} сек</div>
-              </div>
-            </label>
-            {settings.autoRefresh && (
-              <div className="flex items-center gap-2 text-sm font-mono">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="tabular-nums">{countdown}s</span>
-              </div>
-            )}
-          </div>
-
-          {lastFetch && (
-            <div className="text-xs text-muted-foreground">
-              Последнее обновление: {lastFetch.toLocaleTimeString("ru-RU")}
-            </div>
-          )}
-        </Card>
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   </div>
 </div>
   );
