@@ -549,34 +549,20 @@ function SettingsDialog({
               />
               <span className="text-sm">Звуковое уведомление при переходе в ready</span>
             </label>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
                 <Label className="text-xs">Громкость</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min={0}
-                  max={1}
-                  value={settings.notificationVolume}
-                  onChange={(e) => set("notificationVolume", Math.min(1, Math.max(0, Number(e.target.value) || 0)))}
-                />
+                <span className="text-xs text-muted-foreground">{Math.round(settings.notificationVolume * 100)}%</span>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Частота (Hz)</Label>
-                <Input
-                  type="number"
-                  value={settings.notificationFrequency}
-                  onChange={(e) => set("notificationFrequency", Number(e.target.value) || 440)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Длит. (мс)</Label>
-                <Input
-                  type="number"
-                  value={settings.notificationDuration}
-                  onChange={(e) => set("notificationDuration", Number(e.target.value) || 200)}
-                />
-              </div>
+              <input
+                type="range"
+                min={1}
+                max={1}
+                step={0.05}
+                value={settings.notificationVolume}
+                onChange={(e) => set("notificationVolume", Number(e.target.value))}
+                className="w-full accent-primary h-2 rounded-lg bg-muted appearance-none cursor-pointer"
+              />
             </div>
             <Button variant="outline" size="sm" onClick={testSound} className="w-full">
               🔊 Проиграть тестовое уведомление
