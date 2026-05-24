@@ -307,7 +307,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 py-10 space-y-8">
         {/* Header */}
         <header className="flex items-center justify-between">
           <div>
@@ -328,19 +328,19 @@ export default function App() {
       </TabsList>
 
       <TabsContent value="init" className="mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left column */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-8">
             {/* Status Card */}
-            <Card className="p-6">
+            <Card className="p-8">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-3xl border-2", statusMeta.color)}>
+                  <div className={cn("h-[70px] w-[70px] rounded-2xl flex items-center justify-center text-4xl border-2", statusMeta.color)}>
                     {statusMeta.emoji}
                   </div>
                   <div>
                     <div className="text-xs uppercase tracking-wider text-muted-foreground">Статус системы</div>
-                    <div className="text-2xl font-bold">{statusMeta.label}</div>
+                    <div className="text-3xl font-bold">{statusMeta.label}</div>
                     {status?.status && status.status !== statusMeta.label.toLowerCase() && (
                       <div className="text-xs text-muted-foreground font-mono">{status.status}</div>
                     )}
@@ -381,9 +381,9 @@ export default function App() {
           </div>
 
           {/* Right column */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Credentials */}
-            <Card className="p-6 space-y-4">
+            <Card className="p-8 space-y-5">
               <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -416,7 +416,7 @@ export default function App() {
             </Card>
 
             {/* Actions */}
-            <Card className="p-6 space-y-4">
+            <Card className="p-8 space-y-5">
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={() => fetchStatus(true)}
@@ -471,7 +471,7 @@ export default function App() {
       </TabsContent>
 
       <TabsContent value="config" className="mt-6">
-        <Card className="p-6 space-y-4">
+        <Card className="p-8 space-y-5">
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-semibold flex items-center gap-2">
               <Settings2 className="h-5 w-5" /> Конфигурация сервиса
@@ -534,8 +534,8 @@ function InfoRow({
   emoji?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2.5 px-3 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+    <div className="flex items-center justify-between gap-4 py-3 px-4 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors">
+      <div className="flex items-center gap-2.5 text-sm text-muted-foreground min-w-1">
         {emoji ? <span className="text-base">{emoji}</span> : Icon ? <Icon className="h-4 w-4" /> : null}
         <span className="truncate">{label}</span>
       </div>
@@ -550,7 +550,7 @@ function StatusBlocks({ status }: { status: any }) {
   const db = status?.dbState;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
       {connMeta && (
         <InfoRow
           emoji={connMeta.emoji}
@@ -588,9 +588,9 @@ function StatusBlocks({ status }: { status: any }) {
       )}
 
       {rep && (
-        <div className="sm:col-span-2 p-3 rounded-lg bg-muted/40 space-y-2">
+        <div className="sm:col-span-2 p-4 rounded-lg bg-muted/40 space-y-2.5">
           <div className="text-sm font-medium flex items-center gap-2">📡 Репликация</div>
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-3 gap-2.5 text-xs">
             <Stat label="Лаг" value={`${rep.timeLag ?? 0} мс`} />
             <Stat label="Сервер" value={rep.serverDocCount ?? 0} />
             <Stat label="Локально" value={rep.localDocCount ?? 0} />
@@ -599,9 +599,9 @@ function StatusBlocks({ status }: { status: any }) {
       )}
 
       {db && (
-        <div className="sm:col-span-2 p-3 rounded-lg bg-muted/40 space-y-2">
+        <div className="sm:col-span-2 p-4 rounded-lg bg-muted/40 space-y-2.5">
           <div className="text-sm font-medium flex items-center gap-2">🗄️ Состояние БД</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <DbStat emoji="💰" label="min_price" value={db.min_price?.docCount ?? 0} />
             <DbStat emoji="🚫" label="blocked_gtin" value={db.blocked_gtin?.docCount ?? 0} />
             <DbStat emoji="🛑" label="blocked_cis" value={db.blocked_cis?.docCount ?? 0} />
@@ -610,7 +610,7 @@ function StatusBlocks({ status }: { status: any }) {
       )}
 
       {Array.isArray(status.errors) && status.errors.length > 0 && (
-        <div className="sm:col-span-2 p-3 rounded-lg bg-destructive/10 space-y-1">
+        <div className="sm:col-span-2 p-4 rounded-lg bg-destructive/10 space-y-1.5">
           <div className="text-sm font-medium flex items-center gap-2 text-destructive">⚠️ Ошибки</div>
           {status.errors.map((e: any, i: number) => (
             <div key={i} className="text-xs text-destructive">
@@ -625,7 +625,7 @@ function StatusBlocks({ status }: { status: any }) {
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="p-2 rounded-md bg-background/60 text-center">
+    <div className="p-2.5 rounded-md bg-background/60 text-center">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="font-mono font-semibold tabular-nums">{value}</div>
     </div>
@@ -634,7 +634,7 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 
 function DbStat({ emoji, label, value }: { emoji: string; label: string; value: number }) {
   return (
-    <div className="p-2.5 rounded-md bg-background/60 flex items-center gap-2">
+    <div className="p-3 rounded-md bg-background/60 flex items-center gap-2.5">
       <span className="text-lg">{emoji}</span>
       <div className="min-w-0 flex-1">
         <div className="text-[11px] text-muted-foreground font-mono truncate">{label}</div>
@@ -729,11 +729,11 @@ function ConfigBlocks({ config }: { config: any }) {
   const extraKeys = Object.keys(config).filter((k) => !knownKeys.has(k));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {tokenStore && typeof tokenStore === "object" && (
-        <div className="p-3 rounded-lg bg-muted/40 space-y-2">
+        <div className="p-4 rounded-lg bg-muted/40 space-y-2.5">
           <div className="text-sm font-medium flex items-center gap-2">🗝️ Период хранения токенов</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {Object.entries(tokenStore).map(([k, v]) => (
               <InfoRow key={k} emoji="•" label={k} value={renderConfigValue(v, "duration")} />
             ))}
@@ -741,7 +741,7 @@ function ConfigBlocks({ config }: { config: any }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {orderedKeys.map((k) => {
           const meta = CONFIG_FIELD_META[k];
           return (
