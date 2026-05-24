@@ -582,6 +582,18 @@ function SettingsDialog({
                 <Input value={settings.port} onChange={(e) => set("port", e.target.value)} />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label>Версия API</Label>
+              <Input
+                value={settings.apiVersion}
+                placeholder="v2"
+                onChange={(e) => set("apiVersion", e.target.value.trim() || "v2")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Подставляется в URL: <code>/api/{settings.apiVersion}/...</code>
+              </p>
+            </div>
+
           </section>
 
           <Separator />
