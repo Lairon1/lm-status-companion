@@ -298,6 +298,19 @@ export default function App() {
           {/* Info blocks */}
           {status && <StatusBlocks status={status} />}
 
+          {rawResponse && (
+            <details className="group mt-4">
+              <summary className="flex items-center gap-2 cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                <FileJson className="h-4 w-4" />
+                <span>Сырой ответ сервера</span>
+              </summary>
+              <pre className="mt-2 p-3 rounded-lg bg-muted/60 text-xs font-mono overflow-auto max-h-80 border border-border whitespace-pre-wrap break-all">
+                {rawResponse}
+              </pre>
+            </details>
+          )}
+
           {!status && !loading && !error && (
             <div className="text-sm text-muted-foreground text-center py-6">
               Нет данных. Нажмите «Получить статус».
