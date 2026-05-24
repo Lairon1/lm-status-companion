@@ -19,8 +19,6 @@ type Settings = {
   refreshInterval: number;
   notificationsEnabled: boolean;
   notificationVolume: number;
-  notificationFrequency: number;
-  notificationDuration: number;
   autoRefresh: boolean;
 };
 
@@ -33,8 +31,6 @@ const DEFAULTS: Settings = {
   refreshInterval: 10,
   notificationsEnabled: true,
   notificationVolume: 0.4,
-  notificationFrequency: 660,
-  notificationDuration: 250,
   autoRefresh: false,
 };
 
