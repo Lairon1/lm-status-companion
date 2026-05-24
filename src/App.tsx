@@ -168,6 +168,7 @@ export default function App() {
   }, [settings]);
 
   const baseUrl = `http://${settings.address}:${settings.port}`;
+  const apiBase = `${baseUrl}/api/${settings.apiVersion}`;
   const authHeader = useMemo(
     () => "Basic " + btoa(`${settings.login}:${settings.password}`),
     [settings.login, settings.password],
@@ -178,19 +179,22 @@ export default function App() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${baseUrl}/api/v2/status`, {
+        const res = await fetch(`${apiBase}/status`, {
           method: "GET",
           headers: { Authorization: authHeader },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         let data: any;
+        let pretty = text;
         try {
           data = JSON.parse(text);
+          pretty = JSON.stringify(data, null, 2);
         } catch {
           data = { raw: text };
         }
-        setRawResponse(text);
+        setRawResponse(pretty);
+
         const newStatus = data?.status;
         if (newStatus === "ready" && prevStatusRef.current && prevStatusRef.current !== "ready") {
           playMelody(settingsRef.current);
