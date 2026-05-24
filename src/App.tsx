@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 type Settings = {
   address: string;
   port: string;
+  apiVersion: string;
   login: string;
   password: string;
   token: string;
@@ -25,6 +26,7 @@ type Settings = {
 const DEFAULTS: Settings = {
   address: "127.0.0.1",
   port: "5995",
+  apiVersion: "v2",
   login: "admin",
   password: "admin",
   token: "",
@@ -33,6 +35,7 @@ const DEFAULTS: Settings = {
   notificationVolume: 0.4,
   autoRefresh: false,
 };
+
 
 const SETTINGS_KEY = "lm4z_settings";
 
