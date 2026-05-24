@@ -59,15 +59,34 @@ function playMelody(s: Settings) {
     const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
     const ctx = new Ctx();
     const volume = s.notificationVolume;
-    const gap = 0.12;
-    // Pleasant ascending C-major arpeggio + closing note
-    const notes = [
-      { freq: 523.25, duration: 0.18 }, // C5
-      { freq: 659.25, duration: 0.18 }, // E5
-      { freq: 783.99, duration: 0.18 }, // G5
-      { freq: 1046.50, duration: 0.28 }, // C6
+    // LG washing machine end-of-cycle melody — Schubert's "Die Forelle" (The Trout)
+    // Notes in Hz with durations in seconds
+    const E5 = 659.25, F5 = 698.46, G5 = 783.99, A5 = 880.00, B5 = 987.77, C6 = 1046.50, D6 = 1174.66, E6 = 1318.51;
+    const q = 0.22;   // quarter
+    const e = q / 2;  // eighth
+    const h = q * 2;  // half
+    const notes: { freq: number; duration: number; gap?: number }[] = [
+      { freq: E5, duration: e },
+      { freq: G5, duration: e },
+      { freq: C6, duration: q },
+      { freq: C6, duration: e },
+      { freq: C6, duration: e },
+      { freq: D6, duration: q },
+      { freq: C6, duration: e },
+      { freq: B5, duration: e },
+      { freq: A5, duration: q },
+      { freq: G5, duration: e },
+      { freq: E5, duration: e },
+      { freq: G5, duration: q },
+      { freq: C6, duration: e },
+      { freq: E6, duration: e },
+      { freq: D6, duration: q },
+      { freq: C6, duration: e },
+      { freq: B5, duration: e },
+      { freq: C6, duration: h },
     ];
-    let t = ctx.currentTime +  0.02;
+    const gap = 0.02;
+    let t = ctx.currentTime + 0.05;
     notes.forEach((n) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -75,20 +94,23 @@ function playMelody(s: Settings) {
       osc.frequency.value = n.freq;
       const start = t;
       const end = t + n.duration;
+      const attack = 0.012;
+      const release = Math.min(0.06, n.duration * 0.35);
       gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(volume, start + 0.03);
-      gain.gain.setTargetAtTime(1.0, end - 0.05, 0.04);
+      gain.gain.linearRampToValueAtTime(volume, start + attack);
+      gain.gain.setValueAtTime(volume, end - release);
       gain.gain.linearRampToValueAtTime(0, end);
       osc.connect(gain).connect(ctx.destination);
       osc.start(start);
-      osc.stop(end);
+      osc.stop(end + 0.02);
       t = end + gap;
     });
-    setTimeout(() => ctx.close(), (t - ctx.currentTime) * 1000 + 200);
+    setTimeout(() => ctx.close(), (t - ctx.currentTime) * 1000 + 300);
   } catch (e) {
     console.error("Melody error", e);
   }
 }
+
 
 const STATUS_META: Record<string, { label: string; color: string; emoji: string }> = {
   ready: { label: "Готово", color: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400", emoji: "✅" },
