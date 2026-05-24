@@ -19,8 +19,6 @@ type Settings = {
   refreshInterval: number;
   notificationsEnabled: boolean;
   notificationVolume: number;
-  notificationFrequency: number;
-  notificationDuration: number;
   autoRefresh: boolean;
 };
 
@@ -33,8 +31,6 @@ const DEFAULTS: Settings = {
   refreshInterval: 10,
   notificationsEnabled: true,
   notificationVolume: 0.4,
-  notificationFrequency: 660,
-  notificationDuration: 250,
   autoRefresh: false,
 };
 
@@ -62,22 +58,33 @@ function playMelody(s: Settings) {
   try {
     const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
     const ctx = new Ctx();
-    const notes = [s.notificationFrequency, s.notificationFrequency * 1.25, s.notificationFrequency * 1.5];
-    notes.forEach((freq, i) => {
+    const volume = s.notificationVolume;
+    const gap = 0.12;
+    // Pleasant ascending C-major arpeggio + closing note
+    const notes = [
+      { freq: 523.25, duration: 0.18 }, // C5
+      { freq: 659.25, duration: 0.18 }, // E5
+      { freq: 783.99, duration: 0.18 }, // G5
+      { freq: 1046.50, duration: 0.28 }, // C6
+    ];
+    let t = ctx.currentTime +  0.02;
+    notes.forEach((n) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.frequency.value = freq;
-      osc.type = "sine";
-      const start = ctx.currentTime + i * (s.notificationDuration / 1000);
-      const end = start + s.notificationDuration / 1000;
+      osc.type = "triangle";
+      osc.frequency.value = n.freq;
+      const start = t;
+      const end = t + n.duration;
       gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(s.notificationVolume, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, end);
+      gain.gain.linearRampToValueAtTime(volume, start + 0.03);
+      gain.gain.setTargetAtTime(1.0, end - 0.05, 0.04);
+      gain.gain.linearRampToValueAtTime(0, end);
       osc.connect(gain).connect(ctx.destination);
       osc.start(start);
       osc.stop(end);
+      t = end + gap;
     });
-    setTimeout(() => ctx.close(), notes.length * s.notificationDuration + 500);
+    setTimeout(() => ctx.close(), (t - ctx.currentTime) * 1000 + 200);
   } catch (e) {
     console.error("Melody error", e);
   }
@@ -542,34 +549,20 @@ function SettingsDialog({
               />
               <span className="text-sm">Звуковое уведомление при переходе в ready</span>
             </label>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
                 <Label className="text-xs">Громкость</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min={0}
-                  max={1}
-                  value={settings.notificationVolume}
-                  onChange={(e) => set("notificationVolume", Math.min(1, Math.max(0, Number(e.target.value) || 0)))}
-                />
+                <span className="text-xs text-muted-foreground">{Math.round(settings.notificationVolume * 100)}%</span>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Частота (Hz)</Label>
-                <Input
-                  type="number"
-                  value={settings.notificationFrequency}
-                  onChange={(e) => set("notificationFrequency", Number(e.target.value) || 440)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Длит. (мс)</Label>
-                <Input
-                  type="number"
-                  value={settings.notificationDuration}
-                  onChange={(e) => set("notificationDuration", Number(e.target.value) || 200)}
-                />
-              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={settings.notificationVolume}
+                onChange={(e) => set("notificationVolume", Number(e.target.value))}
+                className="w-full accent-primary h-2 rounded-lg bg-muted appearance-none cursor-pointer"
+              />
             </div>
             <Button variant="outline" size="sm" onClick={testSound} className="w-full">
               🔊 Проиграть тестовое уведомление
