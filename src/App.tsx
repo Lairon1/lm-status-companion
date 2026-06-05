@@ -11,6 +11,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+type SoundId = "happy" | "67" | "svin" | "goida";
+
+const SOUNDS: { id: SoundId; label: string; url: string }[] = [
+  { id: "happy", label: "🎉 Хапи хапи хапиии", url: "https://www.myinstants.com/media/sounds/happy-happy-happy-song.mp3" },
+  { id: "67", label: "🔥 67", url: "https://www.myinstants.com/media/sounds/gazan-67-bisvidi.mp3" },
+  { id: "svin", label: "🐷 Визг свина", url: "https://www.myinstants.com/media/sounds/vizg-svini.mp3" },
+  { id: "goida", label: "⚔️ Гойда", url: "https://www.myinstants.com/media/sounds/goida_hRZ6vDr.mp3" },
+];
+
 type Settings = {
   address: string;
   port: string;
@@ -21,6 +30,7 @@ type Settings = {
   refreshInterval: number;
   notificationsEnabled: boolean;
   notificationVolume: number;
+  notificationSound: SoundId;
   autoRefresh: boolean;
 };
 
@@ -33,7 +43,8 @@ const DEFAULTS: Settings = {
   token: "",
   refreshInterval: 10,
   notificationsEnabled: true,
-  notificationVolume: 0.4,
+  notificationVolume: 0.8,
+  notificationSound: "happy",
   autoRefresh: false,
 };
 
