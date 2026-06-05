@@ -230,10 +230,12 @@ export default function App() {
 
   const doInit = useCallback(async () => {
     setIniting(true);
-
     setError(null);
+    const url = `${apiBase}/init`;
+    let res: Response | undefined;
+    let text = "";
     try {
-      const res = await fetch(`${apiBase}/init`, {
+      res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -241,12 +243,25 @@ export default function App() {
         },
         body: JSON.stringify({ token: settings.token }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
       toast.success("Инициализация запущена 🚀");
       await fetchStatus();
     } catch (e: any) {
-      setError(e?.message ?? "Ошибка инициализации");
-      toast.error("Ошибка инициализации", { description: e?.message });
+      const details: ErrorDetails = {
+        message: e?.message ?? "Ошибка инициализации",
+        url,
+        method: "POST",
+        status: res?.status,
+        statusText: res?.statusText,
+        body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
+        stack: e?.stack,
+        time: new Date().toISOString(),
+      };
+      setError(details);
+      toast.error("Ошибка инициализации", {
+        description: `${details.message}${details.body ? " — " + details.body.slice(0, 200) : ""}`,
+      });
     } finally {
       setIniting(false);
     }
@@ -255,13 +270,16 @@ export default function App() {
   const fetchConfig = useCallback(async () => {
     setConfigLoading(true);
     setConfigError(null);
+    const url = `${apiBase}/config`;
+    let res: Response | undefined;
+    let text = "";
     try {
-      const res = await fetch(`${apiBase}/config`, {
+      res = await fetch(url, {
         method: "GET",
         headers: { Authorization: authHeader },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
+      text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
       let data: any;
       let pretty = text;
       try {
@@ -273,7 +291,16 @@ export default function App() {
       setConfigRaw(pretty);
       setConfig(data);
     } catch (e: any) {
-      setConfigError(e?.message ?? "Ошибка запроса конфигурации");
+      setConfigError({
+        message: e?.message ?? "Ошибка запроса конфигурации",
+        url,
+        method: "GET",
+        status: res?.status,
+        statusText: res?.statusText,
+        body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
+        stack: e?.stack,
+        time: new Date().toISOString(),
+      });
     } finally {
       setConfigLoading(false);
     }
