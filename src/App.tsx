@@ -643,8 +643,6 @@ function ErrorBox({ details }: { details: ErrorDetails }) {
             {details.method && details.url && (
               <div><span className="opacity-70">{details.method}</span> {details.url}</div>
             )}
-              <div><span className="opacity-70">{details.method}</span> {details.url}</div>
-            )}
             {details.status !== undefined && (
               <div>Статус: {details.status} {details.statusText}</div>
             )}
