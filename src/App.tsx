@@ -342,16 +342,7 @@ export default function App() {
       setConfigRaw(pretty);
       setConfig(data);
     } catch (e: any) {
-      setConfigError({
-        message: e?.message ?? "Ошибка запроса конфигурации",
-        url,
-        method: "GET",
-        status: res?.status,
-        statusText: res?.statusText,
-        body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
-        stack: e?.stack,
-        time: new Date().toISOString(),
-      });
+      setConfigError(buildErrorDetails(e, url, "GET", res, text));
     } finally {
       setConfigLoading(false);
     }
