@@ -184,7 +184,7 @@ export default function App() {
 
         const newStatus = data?.status;
         if (newStatus === "ready" && prevStatusRef.current && prevStatusRef.current !== "ready") {
-          playMelody(settingsRef.current);
+          playNotification(settingsRef.current);
           toast.success("Статус: Готово ✅", { description: "Система перешла в состояние ready" });
         }
         prevStatusRef.current = newStatus ?? null;
@@ -750,7 +750,7 @@ function SettingsDialog({
   onChange: (s: Settings) => void;
 }) {
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => onChange({ ...settings, [k]: v });
-  const testSound = () => playMelody(settings);
+  const testSound = () => playNotification(settings);
 
   return (
     <Dialog>
