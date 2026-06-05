@@ -385,12 +385,7 @@ export default function App() {
                 {loading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
               </div>
 
-              {error && (
-                <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
+              {error && <ErrorBox details={error} />}
 
               {/* Info blocks */}
               {status && <StatusBlocks status={status} />}
