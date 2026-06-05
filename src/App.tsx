@@ -181,13 +181,16 @@ export default function App() {
     async (resetTimer = true) => {
       setLoading(true);
       setError(null);
+      const url = `${apiBase}/status`;
+      let res: Response | undefined;
+      let text = "";
       try {
-        const res = await fetch(`${apiBase}/status`, {
+        res = await fetch(url, {
           method: "GET",
           headers: { Authorization: authHeader },
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const text = await res.text();
+        text = await res.text();
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
         let data: any;
         let pretty = text;
         try {
@@ -207,7 +210,16 @@ export default function App() {
         setStatus(data);
         setLastFetch(new Date());
       } catch (e: any) {
-        setError(e?.message ?? "Ошибка запроса");
+        setError({
+          message: e?.message ?? "Ошибка запроса",
+          url,
+          method: "GET",
+          status: res?.status,
+          statusText: res?.statusText,
+          body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
+          stack: e?.stack,
+          time: new Date().toISOString(),
+        });
       } finally {
         setLoading(false);
         if (resetTimer) setCountdown(settingsRef.current.refreshInterval);
