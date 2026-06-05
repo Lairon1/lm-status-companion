@@ -596,6 +596,8 @@ function ErrorBox({ details }: { details: ErrorDetails }) {
   const copyAll = () => {
     const txt = [
       `Сообщение: ${details.message}`,
+      details.reason ? `Причина:   ${details.reason}` : "",
+      details.hint ? `Подсказка: ${details.hint}` : "",
       details.method && details.url ? `Запрос:    ${details.method} ${details.url}` : "",
       details.status ? `Статус:    ${details.status} ${details.statusText ?? ""}` : "",
       details.time ? `Время:     ${details.time}` : "",
