@@ -11,6 +11,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+type SoundId = "happy" | "67" | "svin" | "goida";
+
+const SOUNDS: { id: SoundId; label: string; url: string }[] = [
+  { id: "happy", label: "🎉 Хапи хапи хапиии", url: "https://www.myinstants.com/media/sounds/happy-happy-happy-song.mp3" },
+  { id: "67", label: "🔥 67", url: "https://www.myinstants.com/media/sounds/gazan-67-bisvidi.mp3" },
+  { id: "svin", label: "🐷 Визг свина", url: "https://www.myinstants.com/media/sounds/vizg-svini.mp3" },
+  { id: "goida", label: "⚔️ Гойда", url: "https://www.myinstants.com/media/sounds/goida_hRZ6vDr.mp3" },
+];
+
 type Settings = {
   address: string;
   port: string;
@@ -21,6 +30,7 @@ type Settings = {
   refreshInterval: number;
   notificationsEnabled: boolean;
   notificationVolume: number;
+  notificationSound: SoundId;
   autoRefresh: boolean;
 };
 
@@ -33,7 +43,8 @@ const DEFAULTS: Settings = {
   token: "",
   refreshInterval: 10,
   notificationsEnabled: true,
-  notificationVolume: 0.4,
+  notificationVolume: 0.8,
+  notificationSound: "happy",
   autoRefresh: false,
 };
 
@@ -57,61 +68,30 @@ function saveSettings(s: Settings) {
   );
 }
 
-function playMelody(s: Settings) {
+function playNotification(s: Settings) {
   if (!s.notificationsEnabled) return;
+  const sound = SOUNDS.find((x) => x.id === s.notificationSound) ?? SOUNDS[0];
   try {
+    const audio = new Audio(sound.url);
+    audio.crossOrigin = "anonymous";
+    const vol = Math.max(0, s.notificationVolume);
+    if (vol <= 1) {
+      audio.volume = vol;
+      audio.play().catch((e) => console.error("Audio play error", e));
+      return;
+    }
+    // Volume > 100% via Web Audio GainNode
+    audio.volume = 1;
     const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
     const ctx = new Ctx();
-    const volume = s.notificationVolume;
-    // LG washing machine end-of-cycle melody — Schubert's "Die Forelle" (The Trout)
-    // Notes in Hz with durations in seconds
-    const E5 = 659.25, F5 = 698.46, G5 = 783.99, A5 = 880.00, B5 = 987.77, C6 = 1046.50, D6 = 1174.66, E6 = 1318.51;
-    const q = 0.22;   // quarter
-    const e = q / 2;  // eighth
-    const h = q * 2;  // half
-    const notes: { freq: number; duration: number; gap?: number }[] = [
-      { freq: E5, duration: e },
-      { freq: G5, duration: e },
-      { freq: C6, duration: q },
-      { freq: C6, duration: e },
-      { freq: C6, duration: e },
-      { freq: D6, duration: q },
-      { freq: C6, duration: e },
-      { freq: B5, duration: e },
-      { freq: A5, duration: q },
-      { freq: G5, duration: e },
-      { freq: E5, duration: e },
-      { freq: G5, duration: q },
-      { freq: C6, duration: e },
-      { freq: E6, duration: e },
-      { freq: D6, duration: q },
-      { freq: C6, duration: e },
-      { freq: B5, duration: e },
-      { freq: C6, duration: h },
-    ];
-    const gap = 0.02;
-    let t = ctx.currentTime + 0.05;
-    notes.forEach((n) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = n.freq;
-      const start = t;
-      const end = t + n.duration;
-      const attack = 0.012;
-      const release = Math.min(0.06, n.duration * 0.35);
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(volume, start + attack);
-      gain.gain.setValueAtTime(volume, end - release);
-      gain.gain.linearRampToValueAtTime(0, end);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(start);
-      osc.stop(end + 0.02);
-      t = end + gap;
-    });
-    setTimeout(() => ctx.close(), (t - ctx.currentTime) * 1000 + 300);
+    const src = ctx.createMediaElementSource(audio);
+    const gain = ctx.createGain();
+    gain.gain.value = vol;
+    src.connect(gain).connect(ctx.destination);
+    audio.addEventListener("ended", () => ctx.close().catch(() => {}));
+    audio.play().catch((e) => console.error("Audio play error", e));
   } catch (e) {
-    console.error("Melody error", e);
+    console.error("Notification error", e);
   }
 }
 
@@ -204,7 +184,7 @@ export default function App() {
 
         const newStatus = data?.status;
         if (newStatus === "ready" && prevStatusRef.current && prevStatusRef.current !== "ready") {
-          playMelody(settingsRef.current);
+          playNotification(settingsRef.current);
           toast.success("Статус: Готово ✅", { description: "Система перешла в состояние ready" });
         }
         prevStatusRef.current = newStatus ?? null;
@@ -770,7 +750,7 @@ function SettingsDialog({
   onChange: (s: Settings) => void;
 }) {
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => onChange({ ...settings, [k]: v });
-  const testSound = () => playMelody(settings);
+  const testSound = () => playNotification(settings);
 
   return (
     <Dialog>
@@ -835,27 +815,72 @@ function SettingsDialog({
                 checked={settings.notificationsEnabled}
                 onCheckedChange={(c) => set("notificationsEnabled", !!c)}
               />
-              <span className="text-sm">Звуковое уведомление при переходе в ready</span>
+              <span className="text-sm">Звук при завершении инициализации (переход в ready)</span>
             </label>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Звук уведомления</Label>
+              <div className="grid gap-1.5">
+                {SOUNDS.map((s) => (
+                  <label
+                    key={s.id}
+                    className={cn(
+                      "flex items-center justify-between gap-2 rounded-md border px-3 py-2 cursor-pointer transition-colors",
+                      settings.notificationSound === s.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="sound"
+                        className="accent-primary"
+                        checked={settings.notificationSound === s.id}
+                        onChange={() => set("notificationSound", s.id)}
+                      />
+                      <span className="text-sm">{s.label}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        playNotification({ ...settings, notificationsEnabled: true, notificationSound: s.id });
+                      }}
+                    >
+                      ▶ Тест
+                    </Button>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Громкость</Label>
-                <span className="text-xs text-muted-foreground">{Math.round(settings.notificationVolume * 100)}%</span>
+                <Label className="text-xs">Громкость (можно выкрутить выше 100% 🔥)</Label>
+                <span className={cn("text-xs font-mono", settings.notificationVolume > 1 ? "text-red-500 font-bold" : "text-muted-foreground")}>
+                  {Math.round(settings.notificationVolume * 100)}%
+                </span>
               </div>
               <input
                 type="range"
                 min={0}
-                max={1}
+                max={3}
                 step={0.05}
                 value={settings.notificationVolume}
                 onChange={(e) => set("notificationVolume", Number(e.target.value))}
                 className="w-full accent-primary h-2 rounded-lg bg-muted appearance-none cursor-pointer"
               />
+              <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                <span>0%</span><span>100%</span><span>200%</span><span>300%</span>
+              </div>
             </div>
+
             <Button variant="outline" size="sm" onClick={testSound} className="w-full">
-              🔊 Проиграть тестовое уведомление
+              🔊 Проиграть выбранный звук
             </Button>
           </section>
+
         </div>
       </DialogContent>
     </Dialog>
