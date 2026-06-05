@@ -139,6 +139,8 @@ function formatUptime(seconds?: number) {
 
 type ErrorDetails = {
   message: string;
+  reason?: string;
+  hint?: string;
   url?: string;
   method?: string;
   status?: number;
@@ -147,6 +149,73 @@ type ErrorDetails = {
   stack?: string;
   time?: string;
 };
+
+function diagnoseError(e: any, url: string, res?: Response): { reason: string; hint: string } {
+  const pageProto = typeof location !== "undefined" ? location.protocol : "";
+  const isMixed = pageProto === "https:" && url.startsWith("http://");
+  const msg: string = (e?.message || "").toString();
+  const name: string = (e?.name || "").toString();
+
+  if (res) {
+    const s = res.status;
+    if (s === 401) return { reason: "Не авторизовано (401)", hint: "Проверьте логин/пароль или токен." };
+    if (s === 403) return { reason: "Доступ запрещён (403)", hint: "Сервер отклонил запрос. Проверьте права/токен." };
+    if (s === 404) return { reason: "Не найдено (404)", hint: "Проверьте адрес, порт и версию API." };
+    if (s === 408) return { reason: "Таймаут запроса (408)", hint: "Сервер слишком долго отвечал." };
+    if (s === 429) return { reason: "Слишком много запросов (429)", hint: "Подождите и попробуйте снова." };
+    if (s >= 500) return { reason: `Ошибка сервера (${s})`, hint: "Проблема на стороне устройства/сервера." };
+    if (s >= 400) return { reason: `Ошибка клиента (${s})`, hint: "Запрос отклонён сервером." };
+    if (/JSON/i.test(msg)) return { reason: "Не удалось разобрать JSON", hint: "Сервер вернул не-JSON ответ." };
+    return { reason: `HTTP ${s}`, hint: "" };
+  }
+
+  if (name === "AbortError") return { reason: "Запрос прерван (таймаут)", hint: "Сервер не ответил вовремя." };
+  if (isMixed) return {
+    reason: "Смешанный контент: HTTPS → HTTP",
+    hint: "Страница открыта по HTTPS, а API по HTTP. Откройте приложение по HTTP или используйте HTTPS API.",
+  };
+  if (/ERR_CERT|SSL|certificate/i.test(msg)) return {
+    reason: "Проблема с TLS-сертификатом",
+    hint: "Невалидный сертификат на сервере.",
+  };
+  if (/ERR_CONNECTION_REFUSED|refused/i.test(msg)) return {
+    reason: "Соединение отклонено",
+    hint: "На указанном порту никто не слушает. Запущен ли сервер?",
+  };
+  if (/ERR_NAME_NOT_RESOLVED|getaddrinfo|DNS/i.test(msg)) return {
+    reason: "Не удалось разрешить адрес",
+    hint: "Проверьте IP/имя хоста.",
+  };
+  if (/ERR_CONNECTION_TIMED_OUT|timeout|timed out/i.test(msg)) return {
+    reason: "Таймаут соединения",
+    hint: "Устройство не отвечает. Проверьте сеть и доступность хоста.",
+  };
+  if (/NetworkError|Network request failed|ERR_NETWORK/i.test(msg)) return {
+    reason: "Сетевая ошибка",
+    hint: "Устройство недоступно. Проверьте Wi-Fi, IP-адрес и порт.",
+  };
+  if (/Failed to fetch|Load failed/i.test(msg) || name === "TypeError") return {
+    reason: "Не удалось выполнить запрос (Failed to fetch)",
+    hint: "Возможные причины: CORS не настроен на сервере, устройство недоступно, неверный адрес/порт, либо блокировка смешанного контента (HTTPS↔HTTP).",
+  };
+  return { reason: "Неизвестная ошибка запроса", hint: msg || "Нет дополнительных сведений." };
+}
+
+function buildErrorDetails(e: any, url: string, method: string, res: Response | undefined, text: string): ErrorDetails {
+  const diag = diagnoseError(e, url, res);
+  return {
+    message: e?.message ?? "Ошибка запроса",
+    reason: diag.reason,
+    hint: diag.hint,
+    url,
+    method,
+    status: res?.status,
+    statusText: res?.statusText,
+    body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
+    stack: e?.stack,
+    time: new Date().toISOString(),
+  };
+}
 
 export default function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
@@ -209,16 +278,7 @@ export default function App() {
         setStatus(data);
         setLastFetch(new Date());
       } catch (e: any) {
-        setError({
-          message: e?.message ?? "Ошибка запроса",
-          url,
-          method: "GET",
-          status: res?.status,
-          statusText: res?.statusText,
-          body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
-          stack: e?.stack,
-          time: new Date().toISOString(),
-        });
+        setError(buildErrorDetails(e, url, "GET", res, text));
       } finally {
         setLoading(false);
         if (resetTimer) setCountdown(settingsRef.current.refreshInterval);
@@ -247,19 +307,11 @@ export default function App() {
       toast.success("Инициализация запущена 🚀");
       await fetchStatus();
     } catch (e: any) {
-      const details: ErrorDetails = {
-        message: e?.message ?? "Ошибка инициализации",
-        url,
-        method: "POST",
-        status: res?.status,
-        statusText: res?.statusText,
-        body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
-        stack: e?.stack,
-        time: new Date().toISOString(),
-      };
+      const details = buildErrorDetails(e, url, "POST", res, text);
+      details.message = details.message || "Ошибка инициализации";
       setError(details);
       toast.error("Ошибка инициализации", {
-        description: `${details.message}${details.body ? " — " + details.body.slice(0, 200) : ""}`,
+        description: details.reason || details.message,
       });
     } finally {
       setIniting(false);
@@ -290,16 +342,7 @@ export default function App() {
       setConfigRaw(pretty);
       setConfig(data);
     } catch (e: any) {
-      setConfigError({
-        message: e?.message ?? "Ошибка запроса конфигурации",
-        url,
-        method: "GET",
-        status: res?.status,
-        statusText: res?.statusText,
-        body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
-        stack: e?.stack,
-        time: new Date().toISOString(),
-      });
+      setConfigError(buildErrorDetails(e, url, "GET", res, text));
     } finally {
       setConfigLoading(false);
     }
@@ -553,6 +596,8 @@ function ErrorBox({ details }: { details: ErrorDetails }) {
   const copyAll = () => {
     const txt = [
       `Сообщение: ${details.message}`,
+      details.reason ? `Причина:   ${details.reason}` : "",
+      details.hint ? `Подсказка: ${details.hint}` : "",
       details.method && details.url ? `Запрос:    ${details.method} ${details.url}` : "",
       details.status ? `Статус:    ${details.status} ${details.statusText ?? ""}` : "",
       details.time ? `Время:     ${details.time}` : "",
@@ -587,7 +632,13 @@ function ErrorBox({ details }: { details: ErrorDetails }) {
       <div className="p-3 flex items-start gap-2">
         <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1 text-sm">
-          <div className="font-semibold break-words">{details.message}</div>
+          <div className="font-semibold break-words">{details.reason || details.message}</div>
+          {details.hint && (
+            <div className="mt-1 text-xs break-words opacity-90">💡 {details.hint}</div>
+          )}
+          {details.reason && details.message && details.message !== details.reason && (
+            <div className="mt-1 text-xs break-words opacity-80 font-mono">{details.message}</div>
+          )}
           <div className="mt-1 text-xs space-y-0.5 opacity-90 font-mono break-all">
             {details.method && details.url && (
               <div><span className="opacity-70">{details.method}</span> {details.url}</div>
