@@ -278,16 +278,7 @@ export default function App() {
         setStatus(data);
         setLastFetch(new Date());
       } catch (e: any) {
-        setError({
-          message: e?.message ?? "Ошибка запроса",
-          url,
-          method: "GET",
-          status: res?.status,
-          statusText: res?.statusText,
-          body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
-          stack: e?.stack,
-          time: new Date().toISOString(),
-        });
+        setError(buildErrorDetails(e, url, "GET", res, text));
       } finally {
         setLoading(false);
         if (resetTimer) setCountdown(settingsRef.current.refreshInterval);
