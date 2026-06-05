@@ -187,7 +187,6 @@ export default function App() {
       try {
         res = await fetch(url, {
           method: "GET",
-          headers: { Authorization: authHeader },
         });
         text = await res.text();
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
@@ -225,7 +224,7 @@ export default function App() {
         if (resetTimer) setCountdown(settingsRef.current.refreshInterval);
       }
     },
-    [apiBase, authHeader],
+    [apiBase],
   );
 
   const doInit = useCallback(async () => {
