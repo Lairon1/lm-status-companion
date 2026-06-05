@@ -370,7 +370,7 @@ export default function App() {
           {/* Left column */}
           <div className="lg:col-span-2 space-y-8">
             {/* Status Card */}
-            <Card className="p-8">
+            <Card className="p-4 sm:p-8">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex items-center gap-3">
                   <div className={cn("h-[70px] w-[70px] rounded-2xl flex items-center justify-center text-4xl border-2", statusMeta.color)}>
@@ -416,7 +416,7 @@ export default function App() {
           {/* Right column */}
           <div className="space-y-8">
             {/* Credentials */}
-            <Card className="p-8 space-y-5">
+            <Card className="p-4 sm:p-8 space-y-5">
               <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -449,7 +449,7 @@ export default function App() {
             </Card>
 
             {/* Actions */}
-            <Card className="p-8 space-y-5">
+            <Card className="p-4 sm:p-8 space-y-5">
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={() => fetchStatus(true)}
@@ -504,7 +504,7 @@ export default function App() {
       </TabsContent>
 
       <TabsContent value="config" className="mt-6">
-        <Card className="p-8 space-y-5">
+        <Card className="p-4 sm:p-8 space-y-5">
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-semibold flex items-center gap-2">
               <Settings2 className="h-5 w-5" /> Конфигурация сервиса
