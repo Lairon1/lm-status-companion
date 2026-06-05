@@ -518,12 +518,7 @@ export default function App() {
             </Button>
           </div>
 
-          {configError && (
-            <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>{configError}</span>
-            </div>
-          )}
+          {configError && <ErrorBox details={configError} />}
 
           {config && <ConfigBlocks config={config} />}
 
