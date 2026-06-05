@@ -68,61 +68,30 @@ function saveSettings(s: Settings) {
   );
 }
 
-function playMelody(s: Settings) {
+function playNotification(s: Settings) {
   if (!s.notificationsEnabled) return;
+  const sound = SOUNDS.find((x) => x.id === s.notificationSound) ?? SOUNDS[0];
   try {
+    const audio = new Audio(sound.url);
+    audio.crossOrigin = "anonymous";
+    const vol = Math.max(0, s.notificationVolume);
+    if (vol <= 1) {
+      audio.volume = vol;
+      audio.play().catch((e) => console.error("Audio play error", e));
+      return;
+    }
+    // Volume > 100% via Web Audio GainNode
+    audio.volume = 1;
     const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
     const ctx = new Ctx();
-    const volume = s.notificationVolume;
-    // LG washing machine end-of-cycle melody — Schubert's "Die Forelle" (The Trout)
-    // Notes in Hz with durations in seconds
-    const E5 = 659.25, F5 = 698.46, G5 = 783.99, A5 = 880.00, B5 = 987.77, C6 = 1046.50, D6 = 1174.66, E6 = 1318.51;
-    const q = 0.22;   // quarter
-    const e = q / 2;  // eighth
-    const h = q * 2;  // half
-    const notes: { freq: number; duration: number; gap?: number }[] = [
-      { freq: E5, duration: e },
-      { freq: G5, duration: e },
-      { freq: C6, duration: q },
-      { freq: C6, duration: e },
-      { freq: C6, duration: e },
-      { freq: D6, duration: q },
-      { freq: C6, duration: e },
-      { freq: B5, duration: e },
-      { freq: A5, duration: q },
-      { freq: G5, duration: e },
-      { freq: E5, duration: e },
-      { freq: G5, duration: q },
-      { freq: C6, duration: e },
-      { freq: E6, duration: e },
-      { freq: D6, duration: q },
-      { freq: C6, duration: e },
-      { freq: B5, duration: e },
-      { freq: C6, duration: h },
-    ];
-    const gap = 0.02;
-    let t = ctx.currentTime + 0.05;
-    notes.forEach((n) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = n.freq;
-      const start = t;
-      const end = t + n.duration;
-      const attack = 0.012;
-      const release = Math.min(0.06, n.duration * 0.35);
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(volume, start + attack);
-      gain.gain.setValueAtTime(volume, end - release);
-      gain.gain.linearRampToValueAtTime(0, end);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(start);
-      osc.stop(end + 0.02);
-      t = end + gap;
-    });
-    setTimeout(() => ctx.close(), (t - ctx.currentTime) * 1000 + 300);
+    const src = ctx.createMediaElementSource(audio);
+    const gain = ctx.createGain();
+    gain.gain.value = vol;
+    src.connect(gain).connect(ctx.destination);
+    audio.addEventListener("ended", () => ctx.close().catch(() => {}));
+    audio.play().catch((e) => console.error("Audio play error", e));
   } catch (e) {
-    console.error("Melody error", e);
+    console.error("Notification error", e);
   }
 }
 
