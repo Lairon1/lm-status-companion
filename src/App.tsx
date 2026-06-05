@@ -548,6 +548,95 @@ export default function App() {
   );
 }
 
+function ErrorBox({ details }: { details: ErrorDetails }) {
+  const copyAll = () => {
+    const txt = [
+      `Сообщение: ${details.message}`,
+      details.method && details.url ? `Запрос:    ${details.method} ${details.url}` : "",
+      details.status ? `Статус:    ${details.status} ${details.statusText ?? ""}` : "",
+      details.time ? `Время:     ${details.time}` : "",
+      details.body ? `\nОтвет сервера:\n${details.body}` : "",
+      details.stack ? `\nStack:\n${details.stack}` : "",
+    ].filter(Boolean).join("\n");
+    try {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(txt).then(
+          () => toast.success("Скопировано"),
+          () => toast.error("Не удалось скопировать"),
+        );
+      } else {
+        // Fallback for old mobile browsers
+        const ta = document.createElement("textarea");
+        ta.value = txt;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast.success("Скопировано");
+      }
+    } catch {
+      toast.error("Не удалось скопировать");
+    }
+  };
+
+  return (
+    <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive overflow-hidden">
+      <div className="p-3 flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1 text-sm">
+          <div className="font-semibold break-words">{details.message}</div>
+          <div className="mt-1 text-xs space-y-0.5 opacity-90 font-mono break-all">
+            {details.method && details.url && (
+              <div><span className="opacity-70">{details.method}</span> {details.url}</div>
+            )}
+            {details.status !== undefined && (
+              <div>Статус: {details.status} {details.statusText}</div>
+            )}
+            {details.time && <div className="opacity-70">{new Date(details.time).toLocaleString("ru-RU")}</div>}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={copyAll}
+          className="text-[11px] px-2 py-1 rounded border border-destructive/40 hover:bg-destructive/10 shrink-0"
+        >
+          Копировать
+        </button>
+      </div>
+      {(details.body || details.stack) && (
+        <details className="group border-t border-destructive/20">
+          <summary className="px-3 py-2 cursor-pointer select-none text-xs font-medium flex items-center gap-1.5">
+            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+            Подробности
+          </summary>
+          <div className="px-3 pb-3 space-y-2">
+            {details.body && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wider opacity-70 mb-1">Тело ответа</div>
+                <pre className="text-xs font-mono whitespace-pre-wrap break-all bg-background/40 rounded p-2 max-h-60 overflow-auto border border-destructive/20">
+{details.body}
+                </pre>
+              </div>
+            )}
+            {details.stack && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wider opacity-70 mb-1">Stack trace</div>
+                <pre className="text-xs font-mono whitespace-pre-wrap break-all bg-background/40 rounded p-2 max-h-60 overflow-auto border border-destructive/20">
+{details.stack}
+                </pre>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+
+
 function InfoRow({
   icon: Icon,
   label,
