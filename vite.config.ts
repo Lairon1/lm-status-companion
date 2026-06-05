@@ -32,6 +32,9 @@ export default defineConfig({
     emptyOutDir: true,
     assetsInlineLimit: 100000000,
     cssCodeSplit: false,
+    // Wider compatibility with older mobile browsers (iOS Safari 11+, old Android Chrome)
+    target: ["es2017", "safari11", "chrome61", "firefox60", "edge18"],
+    cssTarget: ["safari11", "chrome61"],
     rollupOptions: {
       output: { inlineDynamicImports: true },
     },

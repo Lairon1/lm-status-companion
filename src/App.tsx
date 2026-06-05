@@ -137,19 +137,30 @@ function formatUptime(seconds?: number) {
   return parts.join(" ");
 }
 
+type ErrorDetails = {
+  message: string;
+  url?: string;
+  method?: string;
+  status?: number;
+  statusText?: string;
+  body?: string;
+  stack?: string;
+  time?: string;
+};
+
 export default function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [status, setStatus] = useState<any>(null);
   const [rawResponse, setRawResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initing, setIniting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [countdown, setCountdown] = useState<number>(settings.refreshInterval);
   const [config, setConfig] = useState<any>(null);
   const [configRaw, setConfigRaw] = useState<string | null>(null);
   const [configLoading, setConfigLoading] = useState(false);
-  const [configError, setConfigError] = useState<string | null>(null);
+  const [configError, setConfigError] = useState<ErrorDetails | null>(null);
   const [tab, setTab] = useState<string>("init");
   const prevStatusRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
@@ -170,13 +181,16 @@ export default function App() {
     async (resetTimer = true) => {
       setLoading(true);
       setError(null);
+      const url = `${apiBase}/status`;
+      let res: Response | undefined;
+      let text = "";
       try {
-        const res = await fetch(`${apiBase}/status`, {
+        res = await fetch(url, {
           method: "GET",
           headers: { Authorization: authHeader },
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const text = await res.text();
+        text = await res.text();
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
         let data: any;
         let pretty = text;
         try {
@@ -196,7 +210,16 @@ export default function App() {
         setStatus(data);
         setLastFetch(new Date());
       } catch (e: any) {
-        setError(e?.message ?? "Ошибка запроса");
+        setError({
+          message: e?.message ?? "Ошибка запроса",
+          url,
+          method: "GET",
+          status: res?.status,
+          statusText: res?.statusText,
+          body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
+          stack: e?.stack,
+          time: new Date().toISOString(),
+        });
       } finally {
         setLoading(false);
         if (resetTimer) setCountdown(settingsRef.current.refreshInterval);
@@ -207,10 +230,12 @@ export default function App() {
 
   const doInit = useCallback(async () => {
     setIniting(true);
-
     setError(null);
+    const url = `${apiBase}/init`;
+    let res: Response | undefined;
+    let text = "";
     try {
-      const res = await fetch(`${apiBase}/init`, {
+      res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -218,12 +243,25 @@ export default function App() {
         },
         body: JSON.stringify({ token: settings.token }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
       toast.success("Инициализация запущена 🚀");
       await fetchStatus();
     } catch (e: any) {
-      setError(e?.message ?? "Ошибка инициализации");
-      toast.error("Ошибка инициализации", { description: e?.message });
+      const details: ErrorDetails = {
+        message: e?.message ?? "Ошибка инициализации",
+        url,
+        method: "POST",
+        status: res?.status,
+        statusText: res?.statusText,
+        body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
+        stack: e?.stack,
+        time: new Date().toISOString(),
+      };
+      setError(details);
+      toast.error("Ошибка инициализации", {
+        description: `${details.message}${details.body ? " — " + details.body.slice(0, 200) : ""}`,
+      });
     } finally {
       setIniting(false);
     }
@@ -232,13 +270,16 @@ export default function App() {
   const fetchConfig = useCallback(async () => {
     setConfigLoading(true);
     setConfigError(null);
+    const url = `${apiBase}/config`;
+    let res: Response | undefined;
+    let text = "";
     try {
-      const res = await fetch(`${apiBase}/config`, {
+      res = await fetch(url, {
         method: "GET",
         headers: { Authorization: authHeader },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
+      text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
       let data: any;
       let pretty = text;
       try {
@@ -250,7 +291,16 @@ export default function App() {
       setConfigRaw(pretty);
       setConfig(data);
     } catch (e: any) {
-      setConfigError(e?.message ?? "Ошибка запроса конфигурации");
+      setConfigError({
+        message: e?.message ?? "Ошибка запроса конфигурации",
+        url,
+        method: "GET",
+        status: res?.status,
+        statusText: res?.statusText,
+        body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
+        stack: e?.stack,
+        time: new Date().toISOString(),
+      });
     } finally {
       setConfigLoading(false);
     }
@@ -292,20 +342,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
-      <div className="max-w-7xl mx-auto px-4 py-10 space-y-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-10 space-y-4 sm:space-y-8">
         {/* Header */}
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <span>🛰️</span> LM 4Z initializer
-              <span className="text-xs font-mono font-normal text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-1">v{APP_VERSION}</span>
+        <header className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
+              <span>🛰️</span>
+              <span className="truncate">LM 4Z initializer</span>
+              <span className="text-[10px] sm:text-xs font-mono font-normal text-muted-foreground border border-border rounded px-1.5 py-0.5">v{APP_VERSION}</span>
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-all">
               {baseUrl}
             </p>
           </div>
           <SettingsDialog settings={settings} onChange={setSettings} />
         </header>
+
 
     <Tabs value={tab} onValueChange={setTab} className="w-full">
       <TabsList className="grid grid-cols-2 w-full max-w-md">
@@ -318,7 +370,7 @@ export default function App() {
           {/* Left column */}
           <div className="lg:col-span-2 space-y-8">
             {/* Status Card */}
-            <Card className="p-8">
+            <Card className="p-4 sm:p-8">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex items-center gap-3">
                   <div className={cn("h-[70px] w-[70px] rounded-2xl flex items-center justify-center text-4xl border-2", statusMeta.color)}>
@@ -335,12 +387,7 @@ export default function App() {
                 {loading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
               </div>
 
-              {error && (
-                <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
+              {error && <ErrorBox details={error} />}
 
               {/* Info blocks */}
               {status && <StatusBlocks status={status} />}
@@ -369,7 +416,7 @@ export default function App() {
           {/* Right column */}
           <div className="space-y-8">
             {/* Credentials */}
-            <Card className="p-8 space-y-5">
+            <Card className="p-4 sm:p-8 space-y-5">
               <h2 className="font-semibold flex items-center gap-2">🔑 Авторизация</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -402,7 +449,7 @@ export default function App() {
             </Card>
 
             {/* Actions */}
-            <Card className="p-8 space-y-5">
+            <Card className="p-4 sm:p-8 space-y-5">
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={() => fetchStatus(true)}
@@ -457,7 +504,7 @@ export default function App() {
       </TabsContent>
 
       <TabsContent value="config" className="mt-6">
-        <Card className="p-8 space-y-5">
+        <Card className="p-4 sm:p-8 space-y-5">
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-semibold flex items-center gap-2">
               <Settings2 className="h-5 w-5" /> Конфигурация сервиса
@@ -473,12 +520,7 @@ export default function App() {
             </Button>
           </div>
 
-          {configError && (
-            <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>{configError}</span>
-            </div>
-          )}
+          {configError && <ErrorBox details={configError} />}
 
           {config && <ConfigBlocks config={config} />}
 
@@ -507,6 +549,95 @@ export default function App() {
 </div>
   );
 }
+
+function ErrorBox({ details }: { details: ErrorDetails }) {
+  const copyAll = () => {
+    const txt = [
+      `Сообщение: ${details.message}`,
+      details.method && details.url ? `Запрос:    ${details.method} ${details.url}` : "",
+      details.status ? `Статус:    ${details.status} ${details.statusText ?? ""}` : "",
+      details.time ? `Время:     ${details.time}` : "",
+      details.body ? `\nОтвет сервера:\n${details.body}` : "",
+      details.stack ? `\nStack:\n${details.stack}` : "",
+    ].filter(Boolean).join("\n");
+    try {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(txt).then(
+          () => toast.success("Скопировано"),
+          () => toast.error("Не удалось скопировать"),
+        );
+      } else {
+        // Fallback for old mobile browsers
+        const ta = document.createElement("textarea");
+        ta.value = txt;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast.success("Скопировано");
+      }
+    } catch {
+      toast.error("Не удалось скопировать");
+    }
+  };
+
+  return (
+    <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive overflow-hidden">
+      <div className="p-3 flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1 text-sm">
+          <div className="font-semibold break-words">{details.message}</div>
+          <div className="mt-1 text-xs space-y-0.5 opacity-90 font-mono break-all">
+            {details.method && details.url && (
+              <div><span className="opacity-70">{details.method}</span> {details.url}</div>
+            )}
+            {details.status !== undefined && (
+              <div>Статус: {details.status} {details.statusText}</div>
+            )}
+            {details.time && <div className="opacity-70">{new Date(details.time).toLocaleString("ru-RU")}</div>}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={copyAll}
+          className="text-[11px] px-2 py-1 rounded border border-destructive/40 hover:bg-destructive/10 shrink-0"
+        >
+          Копировать
+        </button>
+      </div>
+      {(details.body || details.stack) && (
+        <details className="group border-t border-destructive/20">
+          <summary className="px-3 py-2 cursor-pointer select-none text-xs font-medium flex items-center gap-1.5">
+            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+            Подробности
+          </summary>
+          <div className="px-3 pb-3 space-y-2">
+            {details.body && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wider opacity-70 mb-1">Тело ответа</div>
+                <pre className="text-xs font-mono whitespace-pre-wrap break-all bg-background/40 rounded p-2 max-h-60 overflow-auto border border-destructive/20">
+{details.body}
+                </pre>
+              </div>
+            )}
+            {details.stack && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wider opacity-70 mb-1">Stack trace</div>
+                <pre className="text-xs font-mono whitespace-pre-wrap break-all bg-background/40 rounded p-2 max-h-60 overflow-auto border border-destructive/20">
+{details.stack}
+                </pre>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+
 
 function InfoRow({
   icon: Icon,
