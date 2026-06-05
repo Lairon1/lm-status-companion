@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { APP_VERSION } from "@/version";
 import sndHappy from "@/assets/sounds/happy.mp3";
 import snd67 from "@/assets/sounds/67.mp3";
 import sndSvin from "@/assets/sounds/svin.mp3";
@@ -297,6 +298,7 @@ export default function App() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
               <span>🛰️</span> LM 4Z initializer
+              <span className="text-xs font-mono font-normal text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-1">v{APP_VERSION}</span>
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               {baseUrl}
