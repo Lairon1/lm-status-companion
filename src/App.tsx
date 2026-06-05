@@ -342,20 +342,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
-      <div className="max-w-7xl mx-auto px-4 py-10 space-y-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-10 space-y-4 sm:space-y-8">
         {/* Header */}
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <span>🛰️</span> LM 4Z initializer
-              <span className="text-xs font-mono font-normal text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-1">v{APP_VERSION}</span>
+        <header className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
+              <span>🛰️</span>
+              <span className="truncate">LM 4Z initializer</span>
+              <span className="text-[10px] sm:text-xs font-mono font-normal text-muted-foreground border border-border rounded px-1.5 py-0.5">v{APP_VERSION}</span>
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-all">
               {baseUrl}
             </p>
           </div>
           <SettingsDialog settings={settings} onChange={setSettings} />
         </header>
+
 
     <Tabs value={tab} onValueChange={setTab} className="w-full">
       <TabsList className="grid grid-cols-2 w-full max-w-md">
