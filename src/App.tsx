@@ -815,27 +815,72 @@ function SettingsDialog({
                 checked={settings.notificationsEnabled}
                 onCheckedChange={(c) => set("notificationsEnabled", !!c)}
               />
-              <span className="text-sm">Звуковое уведомление при переходе в ready</span>
+              <span className="text-sm">Звук при завершении инициализации (переход в ready)</span>
             </label>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Звук уведомления</Label>
+              <div className="grid gap-1.5">
+                {SOUNDS.map((s) => (
+                  <label
+                    key={s.id}
+                    className={cn(
+                      "flex items-center justify-between gap-2 rounded-md border px-3 py-2 cursor-pointer transition-colors",
+                      settings.notificationSound === s.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="sound"
+                        className="accent-primary"
+                        checked={settings.notificationSound === s.id}
+                        onChange={() => set("notificationSound", s.id)}
+                      />
+                      <span className="text-sm">{s.label}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        playNotification({ ...settings, notificationsEnabled: true, notificationSound: s.id });
+                      }}
+                    >
+                      ▶ Тест
+                    </Button>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Громкость</Label>
-                <span className="text-xs text-muted-foreground">{Math.round(settings.notificationVolume * 100)}%</span>
+                <Label className="text-xs">Громкость (можно выкрутить выше 100% 🔥)</Label>
+                <span className={cn("text-xs font-mono", settings.notificationVolume > 1 ? "text-red-500 font-bold" : "text-muted-foreground")}>
+                  {Math.round(settings.notificationVolume * 100)}%
+                </span>
               </div>
               <input
                 type="range"
                 min={0}
-                max={1}
+                max={3}
                 step={0.05}
                 value={settings.notificationVolume}
                 onChange={(e) => set("notificationVolume", Number(e.target.value))}
                 className="w-full accent-primary h-2 rounded-lg bg-muted appearance-none cursor-pointer"
               />
+              <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                <span>0%</span><span>100%</span><span>200%</span><span>300%</span>
+              </div>
             </div>
+
             <Button variant="outline" size="sm" onClick={testSound} className="w-full">
-              🔊 Проиграть тестовое уведомление
+              🔊 Проиграть выбранный звук
             </Button>
           </section>
+
         </div>
       </DialogContent>
     </Dialog>
