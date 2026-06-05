@@ -137,19 +137,30 @@ function formatUptime(seconds?: number) {
   return parts.join(" ");
 }
 
+type ErrorDetails = {
+  message: string;
+  url?: string;
+  method?: string;
+  status?: number;
+  statusText?: string;
+  body?: string;
+  stack?: string;
+  time?: string;
+};
+
 export default function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [status, setStatus] = useState<any>(null);
   const [rawResponse, setRawResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initing, setIniting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorDetails | null>(null);
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [countdown, setCountdown] = useState<number>(settings.refreshInterval);
   const [config, setConfig] = useState<any>(null);
   const [configRaw, setConfigRaw] = useState<string | null>(null);
   const [configLoading, setConfigLoading] = useState(false);
-  const [configError, setConfigError] = useState<string | null>(null);
+  const [configError, setConfigError] = useState<ErrorDetails | null>(null);
   const [tab, setTab] = useState<string>("init");
   const prevStatusRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
