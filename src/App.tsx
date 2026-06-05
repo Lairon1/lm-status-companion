@@ -307,19 +307,11 @@ export default function App() {
       toast.success("Инициализация запущена 🚀");
       await fetchStatus();
     } catch (e: any) {
-      const details: ErrorDetails = {
-        message: e?.message ?? "Ошибка инициализации",
-        url,
-        method: "POST",
-        status: res?.status,
-        statusText: res?.statusText,
-        body: text && text.length > 4000 ? text.slice(0, 4000) + "…" : text,
-        stack: e?.stack,
-        time: new Date().toISOString(),
-      };
+      const details = buildErrorDetails(e, url, "POST", res, text);
+      details.message = details.message || "Ошибка инициализации";
       setError(details);
       toast.error("Ошибка инициализации", {
-        description: `${details.message}${details.body ? " — " + details.body.slice(0, 200) : ""}`,
+        description: details.reason || details.message,
       });
     } finally {
       setIniting(false);
