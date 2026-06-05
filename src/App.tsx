@@ -10,14 +10,18 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import sndHappy from "@/assets/sounds/happy.mp3";
+import snd67 from "@/assets/sounds/67.mp3";
+import sndSvin from "@/assets/sounds/svin.mp3";
+import sndGoida from "@/assets/sounds/goida.mp3";
 
 type SoundId = "happy" | "67" | "svin" | "goida";
 
 const SOUNDS: { id: SoundId; label: string; url: string }[] = [
-  { id: "happy", label: "🎉 Хапи хапи хапиии", url: "https://www.myinstants.com/media/sounds/happy-happy-happy-song.mp3" },
-  { id: "67", label: "🔥 67", url: "https://www.myinstants.com/media/sounds/gazan-67-bisvidi.mp3" },
-  { id: "svin", label: "🐷 Визг свина", url: "https://www.myinstants.com/media/sounds/vizg-svini.mp3" },
-  { id: "goida", label: "⚔️ Гойда", url: "https://www.myinstants.com/media/sounds/goida_hRZ6vDr.mp3" },
+  { id: "happy", label: "🎉 Хапи хапи хапиии", url: sndHappy },
+  { id: "67", label: "🔥 67", url: snd67 },
+  { id: "svin", label: "🐷 Визг свина", url: sndSvin },
+  { id: "goida", label: "⚔️ Гойда", url: sndGoida },
 ];
 
 type Settings = {
