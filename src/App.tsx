@@ -224,7 +224,7 @@ export default function App() {
         if (resetTimer) setCountdown(settingsRef.current.refreshInterval);
       }
     },
-    [apiBase, authHeader],
+    [apiBase],
   );
 
   const doInit = useCallback(async () => {
