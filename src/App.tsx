@@ -632,9 +632,17 @@ function ErrorBox({ details }: { details: ErrorDetails }) {
       <div className="p-3 flex items-start gap-2">
         <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1 text-sm">
-          <div className="font-semibold break-words">{details.message}</div>
+          <div className="font-semibold break-words">{details.reason || details.message}</div>
+          {details.hint && (
+            <div className="mt-1 text-xs break-words opacity-90">💡 {details.hint}</div>
+          )}
+          {details.reason && details.message && details.message !== details.reason && (
+            <div className="mt-1 text-xs break-words opacity-80 font-mono">{details.message}</div>
+          )}
           <div className="mt-1 text-xs space-y-0.5 opacity-90 font-mono break-all">
             {details.method && details.url && (
+              <div><span className="opacity-70">{details.method}</span> {details.url}</div>
+            )}
               <div><span className="opacity-70">{details.method}</span> {details.url}</div>
             )}
             {details.status !== undefined && (
